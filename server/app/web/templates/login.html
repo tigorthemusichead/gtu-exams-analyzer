@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% set show_nav = false %}
+
+{% block title %}Login — Cheat Buster{% endblock %}
+
+{% block content %}
+<article style="max-width:400px;margin:80px auto;">
+  <hgroup>
+    <h2>Cheat Buster</h2>
+    <p>Teacher login</p>
+  </hgroup>
+  <form id="login-form">
+    <label>Email
+      <input type="email" id="email" name="email" required autofocus>
+    </label>
+    <label>Password
+      <input type="password" id="password" name="password" required>
+    </label>
+    <p id="error-msg" class="error hidden"></p>
+    <button type="submit" id="login-btn">Login</button>
+  </form>
+</article>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('error-msg');
+  btn.setAttribute('aria-busy', 'true');
+  btn.disabled = true;
+  err.classList.add('hidden');
+
+  const res = await fetch('/auth/teacher', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      email: document.getElementById('email').value,
+      password: document.getElementById('password').value
+    })
+  });
+
+  btn.removeAttribute('aria-busy');
+  btn.disabled = false;
+
+  if (res.ok) {
+    const data = await res.json();
+    localStorage.setItem('token', data.access_token);
+    window.location.href = '/dashboard';
+  } else {
+    const data = await res.json().catch(() => ({}));
+    err.textContent = data.detail || 'Login failed';
+    err.classList.remove('hidden');
+  }
+});
+</script>
+{% endblock %}

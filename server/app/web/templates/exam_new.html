@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% set show_nav = true %}
+
+{% block title %}New Exam — Cheat Buster{% endblock %}
+
+{% block content %}
+<h2>New Exam</h2>
+<article style="max-width:500px;">
+  <form id="exam-form">
+    <label>Name
+      <input type="text" id="name" name="name" required placeholder="e.g. Python Midterm">
+    </label>
+    <label>Group Number
+      <input type="text" id="group_number" name="group_number" required placeholder="e.g. CS-301">
+    </label>
+    <label>Date
+      <input type="date" id="date" name="date" required>
+    </label>
+    <label>Duration (minutes)
+      <input type="number" id="duration_minutes" name="duration_minutes" required value="90" min="1">
+    </label>
+    <p id="error-msg" class="error hidden"></p>
+    <div style="display:flex;gap:1rem;">
+      <button type="submit" id="submit-btn">Create Exam</button>
+      <a href="/dashboard" role="button" class="secondary outline">Cancel</a>
+    </div>
+  </form>
+</article>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('exam-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('submit-btn');
+  const err = document.getElementById('error-msg');
+  btn.setAttribute('aria-busy', 'true');
+  btn.disabled = true;
+  err.classList.add('hidden');
+
+  const token = localStorage.getItem('token');
+  if (!token) { window.location.href = '/login'; return; }
+
+  const res = await fetch('/exams', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+    body: JSON.stringify({
+      name: document.getElementById('name').value,
+      group_number: document.getElementById('group_number').value,
+      date: document.getElementById('date').value,
+      duration_minutes: parseInt(document.getElementById('duration_minutes').value)
+    })
+  });
+
+  btn.removeAttribute('aria-busy');
+  btn.disabled = false;
+
+  if (res.ok) {
+    const exam = await res.json();
+    window.location.href = `/exams/${exam.exam_id}`;
+  } else {
+    const data = await res.json().catch(() => ({}));
+    err.textContent = data.detail || 'Failed to create exam';
+    err.classList.remove('hidden');
+  }
+});
+</script>
+{% endblock %}

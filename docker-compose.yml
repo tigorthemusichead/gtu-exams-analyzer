@@ -1,0 +1,17 @@
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - db_data:/app/data
+    env_file:
+      - ./server/.env
+    environment:
+      DATABASE_URL: "sqlite+aiosqlite:////app/data/cheat_buster.db"
+    restart: unless-stopped
+
+volumes:
+  db_data:

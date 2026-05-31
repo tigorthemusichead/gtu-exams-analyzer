@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% set show_nav = true %}
+
+{% block title %}{{ exam.name }} — Cheat Buster{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;">
+  <hgroup>
+    <h2>{{ exam.name }}</h2>
+    <p>Group {{ exam.group_number }} &middot; {{ exam.exam_date }} &middot; {{ exam.duration_minutes }} min</p>
+  </hgroup>
+  {% if exam.has_report %}
+  <a href="/exams/{{ exam.exam_id }}/report" role="button">View Report</a>
+  {% endif %}
+</div>
+
+<article>
+  <p><strong>Participants:</strong> {{ exam.participant_count }}</p>
+  {% if not exam.has_report %}
+  <div id="analysis-section">
+    <button id="run-analysis-btn">Run Analysis</button>
+    <p id="analysis-status" class="hidden"></p>
+  </div>
+  {% else %}
+  <p class="success">Analysis complete. <a href="/exams/{{ exam.exam_id }}/report">View report</a></p>
+  {% endif %}
+</article>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const examId = {{ exam.exam_id }};
+
+const runBtn = document.getElementById('run-analysis-btn');
+if (runBtn) {
+  runBtn.addEventListener('click', async () => {
+    const token = localStorage.getItem('token');
+    if (!token) { window.location.href = '/login'; return; }
+
+    runBtn.setAttribute('aria-busy', 'true');
+    runBtn.disabled = true;
+    const status = document.getElementById('analysis-status');
+    status.textContent = 'Running analysis...';
+    status.classList.remove('hidden');
+
+    try {
+      const res = await fetch(`/analysis/${examId}`, {
+        method: 'POST',
+        headers: {'Authorization': `Bearer ${token}`}
+      });
+      if (res.ok) {
+        const data = await res.json();
+        status.textContent = `Analysis done: ${data.individual_count} students, ${data.edge_count} similarity pairs.`;
+        setTimeout(() => window.location.href = `/exams/${examId}/report`, 1500);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        status.textContent = `Error: ${data.detail || res.status}`;
+        runBtn.removeAttribute('aria-busy');
+        runBtn.disabled = false;
+      }
+    } catch (err) {
+      status.textContent = `Network error: ${err.message}`;
+      runBtn.removeAttribute('aria-busy');
+      runBtn.disabled = false;
+    }
+  });
+}
+</script>
+{% endblock %}

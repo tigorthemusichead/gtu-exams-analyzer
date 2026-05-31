@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cheat-buster-client"
+version = "0.1.0"
+description = "Cheat-Buster client: PyQt6 desktop application for students"
+requires-python = ">=3.11"
+dependencies = [
+    "PyQt6",
+    "httpx",
+    "gitpython",
+    "python-dotenv",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-mock",
+    "pytest-qt",
+]
+
+[project.scripts]
+client = "app.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]

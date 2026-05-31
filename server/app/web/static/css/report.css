@@ -1,0 +1,35 @@
+/* Similarity graph styles */
+#graph-container {
+  background: var(--pico-card-background-color, #1e1e2e);
+}
+
+.node circle {
+  stroke-width: 2px;
+  cursor: pointer;
+}
+
+.node text {
+  font-size: 9px;
+  fill: var(--pico-color, #cdd6f4);
+  pointer-events: none;
+  text-anchor: middle;
+  dominant-baseline: auto;
+}
+
+.link {
+  stroke-opacity: 0.8;
+  cursor: pointer;
+  stroke-linecap: round;
+}
+
+.link:hover {
+  stroke-opacity: 1;
+}
+
+#threshold-slider {
+  accent-color: var(--pico-primary);
+}
+
+#suspect-pairs-table tr.suspect-row {
+  background: color-mix(in srgb, var(--pico-del-color) 10%, transparent);
+}

@@ -1,0 +1,49 @@
+/* Override Pico primary color — must match Pico's selector specificity (0,2,0) */
+:root:not([data-theme=dark]),
+[data-theme=light] {
+  --pico-primary: #5231c9;
+  --pico-primary-background: #5231c9;
+  --pico-primary-border: var(--pico-primary-background);
+  --pico-primary-underline: rgba(82, 49, 201, 0.5);
+  --pico-primary-hover: #4228a8;
+  --pico-primary-hover-background: #4a2db8;
+  --pico-primary-hover-border: var(--pico-primary-hover-background);
+  --pico-primary-hover-underline: var(--pico-primary-hover);
+  --pico-primary-focus: rgba(82, 49, 201, 0.5);
+  --pico-primary-inverse: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme=light]) {
+    --pico-primary: #8a6de8;
+    --pico-primary-background: #5231c9;
+    --pico-primary-border: var(--pico-primary-background);
+    --pico-primary-underline: rgba(138, 109, 232, 0.5);
+    --pico-primary-hover: #a98ef0;
+    --pico-primary-hover-background: #5d3ddb;
+    --pico-primary-hover-border: var(--pico-primary-hover-background);
+    --pico-primary-hover-underline: var(--pico-primary-hover);
+    --pico-primary-focus: rgba(138, 109, 232, 0.375);
+    --pico-primary-inverse: #fff;
+  }
+}
+
+[data-theme=dark] {
+  --pico-primary: #8a6de8;
+  --pico-primary-background: #5231c9;
+  --pico-primary-border: var(--pico-primary-background);
+  --pico-primary-underline: rgba(138, 109, 232, 0.5);
+  --pico-primary-hover: #a98ef0;
+  --pico-primary-hover-background: #5d3ddb;
+  --pico-primary-hover-border: var(--pico-primary-hover-background);
+  --pico-primary-hover-underline: var(--pico-primary-hover);
+  --pico-primary-focus: rgba(138, 109, 232, 0.375);
+  --pico-primary-inverse: #fff;
+}
+
+.hidden { display: none !important; }
+.error { color: var(--pico-del-color, #e74c3c); }
+.success { color: var(--pico-ins-color, #2ecc71); }
+.muted { color: var(--pico-muted-color); }
+
+nav { border-bottom: 1px solid var(--pico-muted-border-color); margin-bottom: 1rem; }

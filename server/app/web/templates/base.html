@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Cheat Buster{% endblock %}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="icon" href="/static/favicon.ico">
+{% block head %}{% endblock %}
+</head>
+<body>
+  {% if show_nav %}
+  <nav class="container-fluid">
+    <ul><li><img src="/static/favicon.ico" alt="gtu" style="height:36px"/></li></ul>
+    <ul>
+      <li><a href="/dashboard">Dashboard</a></li>
+      <li><a href="#" id="logout-link">Logout</a></li>
+    </ul>
+  </nav>
+  {% endif %}
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+  <script src="/static/js/app.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

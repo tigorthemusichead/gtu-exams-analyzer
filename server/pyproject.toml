@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cheat-buster-server"
+version = "0.1.0"
+description = "Cheat-Buster server: FastAPI backend for exam monitoring and commit analysis"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "sqlalchemy[asyncio]",
+    "alembic",
+    "pyjwt",
+    "passlib[bcrypt]",
+    "python-dotenv",
+    "aiosqlite",
+    "httpx",
+    "pydantic-settings",
+    "jinja2",
+    "python-multipart",
+    "scikit-learn",
+    "bcrypt",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-mock",
+    "httpx",
+    "anyio[trio]",
+]
+
+[project.scripts]
+serve = "app.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% set show_nav = true %}
+
+{% block title %}Dashboard — Cheat Buster{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;">
+  <h2>Exams</h2>
+  <a href="/exams/new" role="button">+ New Exam</a>
+</div>
+
+<section>
+  <h3>Analyzed</h3>
+  {% if analyzed %}
+  <table>
+    <thead><tr><th>Name</th><th>Group</th><th>Date</th><th>Students</th><th></th></tr></thead>
+    <tbody>
+    {% for exam in analyzed %}
+    <tr>
+      <td><a href="/exams/{{ exam.exam_id }}">{{ exam.name }}</a></td>
+      <td>{{ exam.group_number }}</td>
+      <td>{{ exam.exam_date }}</td>
+      <td>{{ exam.participant_count }}</td>
+      <td><a href="/exams/{{ exam.exam_id }}/report" role="button" class="secondary outline">Report</a></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No analyzed exams yet.</p>
+  {% endif %}
+</section>
+
+<section>
+  <h3>Pending</h3>
+  {% if pending %}
+  <table>
+    <thead><tr><th>Name</th><th>Group</th><th>Date</th><th>Students</th><th></th></tr></thead>
+    <tbody>
+    {% for exam in pending %}
+    <tr>
+      <td><a href="/exams/{{ exam.exam_id }}">{{ exam.name }}</a></td>
+      <td>{{ exam.group_number }}</td>
+      <td>{{ exam.exam_date }}</td>
+      <td>{{ exam.participant_count }}</td>
+      <td><a href="/exams/{{ exam.exam_id }}" role="button" class="outline">View</a></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No pending exams.</p>
+  {% endif %}
+</section>
+{% endblock %}

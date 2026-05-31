@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% set show_nav = true %}
+
+{% block title %}Report: {{ exam.name }} — Cheat Buster{% endblock %}
+
+{% block content %}
+<hgroup>
+  <h2>Report: {{ exam.name }}</h2>
+  <p>Group {{ exam.group_number }} &middot; {{ exam.exam_date }}</p>
+</hgroup>
+
+<section>
+  <h3>Similarity Graph</h3>
+  <div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.5rem;">
+    <label style="margin:0;">Threshold:
+      <input type="range" id="threshold-slider" min="0" max="1" step="0.05" value="0.6" style="width:200px;vertical-align:middle;">
+      <span id="threshold-value">0.60</span>
+    </label>
+  </div>
+  <div id="graph-container" style="border:1px solid var(--pico-muted-border-color);border-radius:var(--pico-border-radius);overflow:hidden;">
+    <svg id="similarity-graph" style="width:100%;height:520px;"></svg>
+  </div>
+</section>
+
+<!-- Edge / suspect-pair detail modal -->
+<dialog id="edge-modal">
+  <article>
+    <header>
+      <button rel="prev" id="modal-close" aria-label="Close"></button>
+      <h4>Similarity Detail</h4>
+    </header>
+    <dl>
+      <dt>Student A</dt><dd id="modal-a"></dd>
+      <dt>Student B</dt><dd id="modal-b"></dd>
+      <dt>Combined Score (M)</dt><dd id="modal-score"></dd>
+      <dt>Cosine</dt><dd id="modal-cosine"></dd>
+      <dt>Structural</dt><dd id="modal-structural"></dd>
+      <dt>Sequential</dt><dd id="modal-sequential"></dd>
+    </dl>
+    <section id="modal-seq-matches" hidden>
+      <h5>Sequential commit matches</h5>
+      <div id="modal-seq-matches-list"></div>
+    </section>
+  </article>
+</dialog>
+
+<!-- Individual anomaly detail modal -->
+<dialog id="anomaly-modal">
+  <article>
+    <header>
+      <button rel="prev" id="anomaly-modal-close" aria-label="Close"></button>
+      <h4>Anomaly Detail</h4>
+    </header>
+    <dl>
+      <dt>Student</dt><dd id="anomaly-student"></dd>
+      <dt>Anomaly Score</dt><dd id="anomaly-score"></dd>
+    </dl>
+    <h5>Suspicious Flags</h5>
+    <ul id="anomaly-flags"></ul>
+  </article>
+</dialog>
+
+<section>
+  <h3>Suspect Pairs</h3>
+  <table id="suspect-pairs-table">
+    <thead><tr><th>Student A</th><th>Student B</th><th>Score M</th><th>Cosine</th><th>Structural</th><th>Sequential</th></tr></thead>
+    <tbody id="suspect-pairs-body"></tbody>
+  </table>
+</section>
+
+<section>
+  <h3>Individual Anomaly Scores</h3>
+  <table>
+    <thead><tr><th>Student</th><th>Anomaly Score</th><th>Flagged Events</th><th>Status</th></tr></thead>
+    <tbody id="anomaly-tbody">
+    {% for ind in report.individual %}
+    <tr data-student-id="{{ ind.student_id }}" style="cursor:pointer">
+      <td>{{ student_emails.get(ind.student_id, ind.student_id) }}</td>
+      <td>{{ "%.2f"|format(ind.anomaly_score) }}</td>
+      <td>{{ ind.events | length }}</td>
+      <td>{% if ind.student_id in report.suspects %}<mark>Suspect</mark>{% else %}OK{% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/report.css">
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="/static/js/report.js"></script>
+<script>
+const REPORT_DATA = {{ report_json | safe }};
+const SUSPECTS = {{ report.suspects | tojson }};
+const EMAIL_MAP = {{ student_emails_json | safe }};
+initReport(REPORT_DATA, SUSPECTS, EMAIL_MAP);
+</script>
+{% endblock %}
