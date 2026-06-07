@@ -133,6 +133,8 @@ RestartSec=5
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=${SERVICE_NAME}
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 
 [Install]
 WantedBy=multi-user.target
