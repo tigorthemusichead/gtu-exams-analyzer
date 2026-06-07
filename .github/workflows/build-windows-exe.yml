@@ -1,0 +1,66 @@
+name: Build Windows EXE
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: pip install -e "client[dev]"
+
+      - name: Install Pillow (icon conversion)
+        run: pip install Pillow
+
+      # Bake SERVER_URL into default before freezing.
+      # Set repo variable SERVER_URL in Settings → Variables → Actions.
+      # If unset, the localhost default in config.py is preserved.
+      - name: Bake SERVER_URL
+        if: ${{ vars.SERVER_URL != '' }}
+        shell: python
+        env:
+          SERVER_URL: ${{ vars.SERVER_URL }}
+        run: |
+          import os, pathlib
+          cfg = pathlib.Path("client/app/config.py")
+          src = cfg.read_text()
+          cfg.write_text(src.replace(
+              '"http://localhost:8001"',
+              f'"{os.environ["SERVER_URL"]}"',
+          ))
+
+      - name: Generate logo.ico from logo.png
+        shell: python
+        run: |
+          from PIL import Image
+          img = Image.open("client/app/resources/logo.png").convert("RGBA")
+          img.save(
+              "client/app/resources/logo.ico",
+              format="ICO",
+              sizes=[(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)],
+          )
+
+      - name: Build .exe
+        working-directory: client
+        run: pyinstaller cheat-buster-windows.spec
+
+      # Windows has no ad-hoc signing equivalent to macOS `codesign --sign -`.
+      # The exe is unsigned; no certificate is required.
+
+      - name: Upload EXE to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: client/dist/cheat-buster.exe

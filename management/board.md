@@ -8,6 +8,7 @@
 
 ## Done
 
+- [TASK-035] Add Windows build with ad-hoc signing
 - [TASK-034] Bundle client for macOS DMG
 - [TASK-032] Cohort-relative late start detection
 - [TASK-031] Enhance sequential match display in pair modal (direction + stats)

@@ -19,3 +19,7 @@ build-mac-dmg: build-mac-sign
 	  --app-drop-link 450 200 \
 	  client/dist/Cheat-Buster.dmg \
 	  client/dist/cheat-buster.app
+
+build-windows-exe:
+	python -c "from PIL import Image; img = Image.open('client/app/resources/logo.png').convert('RGBA'); img.save('client/app/resources/logo.ico', format='ICO', sizes=[(16,16),(32,32),(48,48),(64,64),(128,128),(256,256)])"
+	cd client && pyinstaller cheat-buster-windows.spec

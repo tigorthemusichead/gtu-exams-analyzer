@@ -1,0 +1,89 @@
+name: Smoke Test (Windows)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  smoke-test:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -e "client[dev]"
+
+      - name: Install Pillow (icon conversion)
+        run: pip install Pillow
+
+      - name: Generate logo.ico from logo.png
+        shell: python
+        run: |
+          from PIL import Image
+          img = Image.open("client/app/resources/logo.png").convert("RGBA")
+          img.save(
+              "client/app/resources/logo.ico",
+              format="ICO",
+              sizes=[(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)],
+          )
+
+      - name: Build .exe
+        working-directory: client
+        run: pyinstaller cheat-buster-windows.spec
+
+      - name: Launch app
+        shell: pwsh
+        run: |
+          $proc = Start-Process -FilePath "client\dist\cheat-buster.exe" -PassThru
+          Start-Sleep -Seconds 8
+          $proc.Refresh()
+          if ($proc.HasExited) {
+            Write-Error "App failed to start"
+            exit 1
+          }
+          echo "APP_PID=$($proc.Id)" >> $env:GITHUB_ENV
+
+      - name: Wait for window to render
+        shell: pwsh
+        run: Start-Sleep -Seconds 2
+
+      - name: Take screenshot
+        shell: pwsh
+        run: |
+          Add-Type -AssemblyName System.Windows.Forms
+          Add-Type -AssemblyName System.Drawing
+          $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+          $bmp = New-Object System.Drawing.Bitmap($bounds.Width, $bounds.Height)
+          $gfx = [System.Drawing.Graphics]::FromImage($bmp)
+          $gfx.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
+          $bmp.Save("smoke-screenshot.png", [System.Drawing.Imaging.ImageFormat]::Png)
+          $gfx.Dispose()
+          $bmp.Dispose()
+
+      - name: Verify app still running
+        shell: pwsh
+        run: |
+          $proc = Get-Process -Id $env:APP_PID -ErrorAction SilentlyContinue
+          if (-not $proc) {
+            Write-Error "App crashed after launch"
+            exit 1
+          }
+
+      - name: Stop app
+        if: always()
+        shell: pwsh
+        run: Stop-Process -Name "cheat-buster" -Force -ErrorAction SilentlyContinue
+
+      - name: Upload screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-screenshot-${{ github.sha }}
+          path: smoke-screenshot.png
+          if-no-files-found: warn
