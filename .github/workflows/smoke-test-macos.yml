@@ -1,0 +1,65 @@
+name: Smoke Test (macOS)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  smoke-test:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -e "client[dev]"
+
+      - name: Build .app
+        working-directory: client
+        run: pyinstaller cheat-buster.spec
+
+      # open registers the app with the macOS window server (needed for screencapture)
+      - name: Launch app
+        run: |
+          open client/dist/cheat-buster.app
+          sleep 8
+          APP_PID=$(pgrep -x "cheat-buster" | head -1)
+          if [ -z "$APP_PID" ]; then
+            echo "App failed to start"
+            exit 1
+          fi
+          echo "APP_PID=$APP_PID" >> $GITHUB_ENV
+
+      - name: Bring window to front
+        run: osascript -e 'tell application "cheat-buster" to activate'
+
+      - name: Wait for window to render
+        run: sleep 2
+
+      - name: Take screenshot
+        run: screencapture -x smoke-screenshot.png
+
+      - name: Verify app still running
+        run: |
+          if ! kill -0 $APP_PID 2>/dev/null; then
+            echo "App crashed after launch"
+            exit 1
+          fi
+
+      - name: Stop app
+        if: always()
+        run: |
+          pkill -x "cheat-buster" || true
+
+      - name: Upload screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-screenshot-${{ github.sha }}
+          path: smoke-screenshot.png
+          if-no-files-found: warn
