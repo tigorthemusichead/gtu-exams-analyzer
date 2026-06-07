@@ -111,10 +111,18 @@ info "Running Alembic migrations..."
     "$VENV/bin/alembic" upgrade head
 )
 
-# ── 8. file ownership ─────────────────────────────────────────────────────────
+# ── 8. database seed ─────────────────────────────────────────────────────────
+info "Seeding database..."
+(
+    cd "$APP_DIR"
+    set -a; source "$ENV_FILE"; set +a
+    "$VENV/bin/python" -m app.seed
+)
+
+# ── 9. file ownership ─────────────────────────────────────────────────────────
 chown -R "$APP_USER:$APP_USER" "$APP_DIR"
 
-# ── 9. systemd service ───────────────────────────────────────────────────────
+# ── 10. systemd service ──────────────────────────────────────────────────────
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 info "Installing systemd service: ${SERVICE_NAME}..."
 cat > "$SERVICE_FILE" <<EOF
@@ -144,7 +152,7 @@ systemctl daemon-reload
 systemctl enable "$SERVICE_NAME"
 systemctl restart "$SERVICE_NAME"
 
-# ── 10. summary ───────────────────────────────────────────────────────────────
+# ── 11. summary ───────────────────────────────────────────────────────────────
 info "Done. Service status:"
 systemctl status "$SERVICE_NAME" --no-pager -l || true
 echo
