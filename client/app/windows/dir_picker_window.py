@@ -1,10 +1,12 @@
-from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QPushButton, QLineEdit, QFileDialog, QMessageBox
-)
-from PyQt6.QtCore import pyqtSignal, Qt
-from PyQt6.QtGui import QFont
+import os
+
 import git  # gitpython
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import (
+    QFileDialog, QFrame, QHBoxLayout, QLabel, QLineEdit,
+    QMessageBox, QPushButton, QVBoxLayout, QWidget,
+)
 
 
 class DirPickerWindow(QWidget):
@@ -19,34 +21,43 @@ class DirPickerWindow(QWidget):
         self.student_email = student_email
         self._selected_path: str | None = None
         self.setWindowTitle("cheat-buster — Select Working Directory")
-        self.setMinimumSize(540, 280)
+        self.setMinimumSize(540, 300)
         self._build_ui()
 
     def _build_ui(self):
         root = QVBoxLayout()
-        root.setContentsMargins(32, 24, 32, 24)
-        root.setSpacing(16)
+        root.setContentsMargins(48, 40, 48, 36)
+        root.setSpacing(0)
 
-        # Title
-        title = QLabel("Select your working directory")
+        # ── Title ─────────────────────────────────────────────────────────
+        title = QLabel("Select working directory")
         title_font = QFont()
-        title_font.setPointSize(15)
+        title_font.setPointSize(16)
         title_font.setBold(True)
         title.setFont(title_font)
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         root.addWidget(title)
+        root.addSpacing(8)
 
-        # Subtitle
         subtitle = QLabel("Your code will be tracked here during the exam")
         subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        subtitle.setStyleSheet("color: #555;")
+        subtitle.setStyleSheet("color: #6B7280; font-size: 12px;")
         root.addWidget(subtitle)
+        root.addSpacing(32)
 
-        root.addStretch()
+        # ── Directory picker card ─────────────────────────────────────────
+        card = QFrame()
+        card.setObjectName("card")
+        card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(20, 20, 20, 20)
+        card_layout.setSpacing(12)
 
-        # Path row: read-only line edit + Browse button
+        path_label = QLabel("Directory")
+        path_label.setStyleSheet("color: #4B5563; font-size: 11px; font-weight: 600;")
+        card_layout.addWidget(path_label)
+
         path_row = QHBoxLayout()
-        path_row.setSpacing(8)
+        path_row.setSpacing(10)
 
         self._path_display = QLineEdit()
         self._path_display.setReadOnly(True)
@@ -54,27 +65,32 @@ class DirPickerWindow(QWidget):
         path_row.addWidget(self._path_display, stretch=1)
 
         browse_btn = QPushButton("Browse…")
+        browse_btn.setProperty("role", "secondary")
         browse_btn.setMinimumWidth(90)
+        browse_btn.setMinimumHeight(38)
         browse_btn.clicked.connect(self._on_browse)
         path_row.addWidget(browse_btn)
 
-        root.addLayout(path_row)
-
+        card_layout.addLayout(path_row)
+        root.addWidget(card)
         root.addStretch()
 
-        # Action buttons row
+        # ── Action buttons ────────────────────────────────────────────────
         btn_row = QHBoxLayout()
         btn_row.setSpacing(12)
 
         self._back_btn = QPushButton("Back")
-        self._back_btn.setMinimumWidth(90)
+        self._back_btn.setProperty("role", "secondary")
+        self._back_btn.setMinimumHeight(40)
+        self._back_btn.setMinimumWidth(100)
         self._back_btn.clicked.connect(self.back.emit)
         btn_row.addWidget(self._back_btn)
 
         btn_row.addStretch()
 
         self._confirm_btn = QPushButton("Confirm")
-        self._confirm_btn.setMinimumWidth(120)
+        self._confirm_btn.setMinimumHeight(40)
+        self._confirm_btn.setMinimumWidth(130)
         self._confirm_btn.setEnabled(False)
         self._confirm_btn.clicked.connect(self._on_confirm)
         btn_row.addWidget(self._confirm_btn)

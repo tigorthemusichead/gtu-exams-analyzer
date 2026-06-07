@@ -19,6 +19,7 @@ dev = [
     "pytest",
     "pytest-mock",
     "pytest-qt",
+    "pyinstaller",
 ]
 
 [project.scripts]

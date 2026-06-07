@@ -178,6 +178,7 @@ async def exam_report_page(
 
     individual = []
     suspect_set: set[int] = set()
+    anomaly_suspect_ids: set[int] = set()
     for row in analysis_rows:
         anomaly_score = 1.0 - row.normality_score
         flags_raw = _json.loads(row.suspicious_flags) if row.suspicious_flags else []
@@ -190,6 +191,7 @@ async def exam_report_page(
         individual.append(IndividualResultSchema(student_id=row.student_id, anomaly_score=anomaly_score, events=events))
         if anomaly_score > settings.SUSPECT_ANOMALY_THRESHOLD:
             suspect_set.add(row.student_id)
+            anomaly_suspect_ids.add(row.student_id)
 
     edges = []
     for row in pair_rows:
@@ -236,5 +238,6 @@ async def exam_report_page(
             "report_json": report.model_dump_json(),
             "student_emails": student_emails,
             "student_emails_json": _json.dumps({str(k): v for k, v in student_emails.items()}),
+            "anomaly_suspect_ids": anomaly_suspect_ids,
         },
     )

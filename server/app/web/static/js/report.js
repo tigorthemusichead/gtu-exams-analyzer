@@ -17,6 +17,7 @@ function initReport(reportData, suspects, emailMap) {
     threshold = parseFloat(slider.value);
     thresholdDisplay.textContent = threshold.toFixed(2);
     updateEdgeStyles();
+    updateNodeStyles();
     renderSuspectPairs();
   });
 
@@ -75,10 +76,7 @@ function initReport(reportData, suspects, emailMap) {
       .on('drag', dragged)
       .on('end', dragEnd));
 
-  node.append('circle')
-    .attr('r', 16)
-    .attr('fill', d => suspectSet.has(d.id) ? '#f38ba8' : '#89b4fa')
-    .attr('stroke', d => suspectSet.has(d.id) ? '#e06c75' : '#61afef');
+  node.append('circle').attr('r', 16);
 
   node.each(function(d) {
     const text = d3.select(this).append('text').attr('y', 22);
@@ -89,7 +87,29 @@ function initReport(reportData, suspects, emailMap) {
     }
   });
 
-  node.append('title').text(d => `${emailMap[d.id] || 'Student ' + d.id}${suspectSet.has(d.id) ? ' (suspect)' : ''}`);
+  node.append('title');
+
+  function aboveThresholdIds() {
+    const ids = new Set();
+    edges.forEach(e => {
+      if (e.score >= threshold) {
+        ids.add(e.student_a);
+        ids.add(e.student_b);
+      }
+    });
+    return ids;
+  }
+
+  function updateNodeStyles() {
+    const activeIds = aboveThresholdIds();
+    nodeGroup.selectAll('.node circle')
+      .attr('fill', d => activeIds.has(d.id) ? '#f38ba8' : '#89b4fa')
+      .attr('stroke', d => activeIds.has(d.id) ? '#e06c75' : '#61afef');
+    nodeGroup.selectAll('.node title')
+      .text(d => `${emailMap[d.id] || 'Student ' + d.id}${activeIds.has(d.id) ? ' (suspect)' : ''}`);
+  }
+
+  updateNodeStyles();
 
   simulation.on('tick', () => {
     link

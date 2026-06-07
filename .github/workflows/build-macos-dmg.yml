@@ -1,0 +1,68 @@
+name: Build macOS DMG
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: pip install -e "client[dev]"
+
+      - name: Install create-dmg
+        run: brew install create-dmg
+
+      # Bake SERVER_URL into default before freezing.
+      # Set repo variable SERVER_URL in Settings → Variables → Actions.
+      # If unset, the localhost default in config.py is preserved.
+      - name: Bake SERVER_URL
+        if: ${{ vars.SERVER_URL != '' }}
+        run: |
+          python3 - <<'EOF'
+          import os, pathlib
+          cfg = pathlib.Path("client/app/config.py")
+          src = cfg.read_text()
+          cfg.write_text(src.replace(
+              '"http://localhost:8001"',
+              f'"{os.environ["SERVER_URL"]}"',
+          ))
+          EOF
+        env:
+          SERVER_URL: ${{ vars.SERVER_URL }}
+
+      - name: Build .app
+        working-directory: client
+        run: pyinstaller cheat-buster.spec
+
+      - name: Sign ad-hoc
+        run: codesign --deep --force --sign - client/dist/cheat-buster.app
+
+      - name: Package .dmg
+        run: |
+          rm -f client/dist/Cheat-Buster.dmg
+          create-dmg \
+            --volname "Cheat Buster" \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --icon "cheat-buster.app" 150 200 \
+            --app-drop-link 450 200 \
+            client/dist/Cheat-Buster.dmg \
+            client/dist/cheat-buster.app
+
+      - name: Upload DMG to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: client/dist/Cheat-Buster.dmg

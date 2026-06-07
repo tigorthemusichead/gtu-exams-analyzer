@@ -78,7 +78,7 @@
       <td>{{ student_emails.get(ind.student_id, ind.student_id) }}</td>
       <td>{{ "%.2f"|format(ind.anomaly_score) }}</td>
       <td>{{ ind.events | length }}</td>
-      <td>{% if ind.student_id in report.suspects %}<mark>Suspect</mark>{% else %}OK{% endif %}</td>
+      <td>{% if ind.student_id in anomaly_suspect_ids %}<mark>Suspect</mark>{% else %}OK{% endif %}</td>
     </tr>
     {% endfor %}
     </tbody>

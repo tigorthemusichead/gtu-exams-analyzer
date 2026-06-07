@@ -2,10 +2,13 @@
 
 ## Backlog
 
+- [TASK-033] Add AST analysis for C++, C, C#, Java, JavaScript
+
 ## In Progress
 
 ## Done
 
+- [TASK-034] Bundle client for macOS DMG
 - [TASK-032] Cohort-relative late start detection
 - [TASK-031] Enhance sequential match display in pair modal (direction + stats)
 - [TASK-030] Sequential commit match evidence in pair similarity modal

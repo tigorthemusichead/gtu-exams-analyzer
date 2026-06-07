@@ -1,14 +1,19 @@
 import os
+import shutil
 import sys
 
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QApplication, QMessageBox, QStackedWidget
 
 from app.api import api_client
 from app.git_watcher import GitWatcher
+from app.theme import STYLESHEET
 from app.windows.auth_window import AuthWindow
 from app.windows.dir_picker_window import DirPickerWindow
 from app.windows.exam_window import ExamWindow
 from app.windows.session_window import SessionWindow
+
+_ICO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "logo.png")
 
 
 class MainApp(QStackedWidget):
@@ -110,9 +115,29 @@ class MainApp(QStackedWidget):
         self.setCurrentWidget(self._auth_window)
 
 
+def _check_git():
+    git_path = shutil.which("git")
+    if git_path is None:
+        _app = QApplication(sys.argv)
+        QMessageBox.critical(
+            None,
+            "Git Not Found",
+            "Git is required but not installed.\n\n"
+            "Install via Terminal:\n"
+            "    xcode-select --install\n\n"
+            "Or download from: https://git-scm.com",
+        )
+        sys.exit(1)
+    # Help gitpython find git in bundled app (PATH may differ)
+    os.environ.setdefault("GIT_PYTHON_GIT_EXECUTABLE", git_path)
+
+
 def main():
+    _check_git()
     app = QApplication(sys.argv)
     app.setApplicationName("cheat-buster")
+    app.setStyleSheet(STYLESHEET)
+    app.setWindowIcon(QIcon(_ICO_PATH))
     window = MainApp()
     window.show()
     return app.exec()
