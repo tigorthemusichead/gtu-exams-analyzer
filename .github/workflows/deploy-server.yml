@@ -29,7 +29,7 @@ jobs:
             -p ${{ secrets.DEPLOY_PORT || '22' }} \
             -o StrictHostKeyChecking=yes \
             ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
-            "sudo mkdir -p /opt/cheat-buster-src && sudo chown ${{ secrets.DEPLOY_USER }}:${{ secrets.DEPLOY_USER }} /opt/cheat-buster-src"
+            "sudo mkdir -p /opt/cheat-buster-src && sudo chown -R ${{ secrets.DEPLOY_USER }}:${{ secrets.DEPLOY_USER }} /opt/cheat-buster-src"
 
       - name: Rsync files to server
         run: |
