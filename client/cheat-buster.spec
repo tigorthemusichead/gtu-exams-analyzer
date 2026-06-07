@@ -53,7 +53,7 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='Cheat Buster',
+    name='cheat-buster',
 )
 
 app = BUNDLE(
