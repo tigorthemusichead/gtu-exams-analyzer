@@ -6,7 +6,7 @@ set -euo pipefail
 # ---------- config ----------
 APP_USER="${APP_USER:-cheatbuster}"
 APP_DIR="${APP_DIR:-/opt/cheat-buster}"
-SERVER_PORT="${SERVER_PORT:-8000}"
+SERVER_PORT="${SERVER_PORT:-80}"
 PYTHON_VERSION="3.11"
 SERVICE_NAME="cheat-buster"
 # ----------------------------

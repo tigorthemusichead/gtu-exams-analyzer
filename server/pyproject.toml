@@ -18,6 +18,7 @@ dependencies = [
     "aiosqlite",
     "httpx",
     "pydantic-settings",
+    "pydantic[email]",
     "jinja2",
     "python-multipart",
     "scikit-learn",
