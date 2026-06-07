@@ -1,0 +1,43 @@
+name: Deploy Server
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'server/**'
+      - 'bin/provision-server.sh'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p ${{ secrets.DEPLOY_PORT || '22' }} -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Rsync files to server
+        run: |
+          SSH="ssh -i ~/.ssh/deploy_key -p ${{ secrets.DEPLOY_PORT || '22' }} -o StrictHostKeyChecking=yes"
+          DEST="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/cheat-buster-src"
+          rsync -az --delete -e "$SSH" \
+            --exclude '__pycache__' --exclude '*.pyc' \
+            --exclude '.venv' --exclude '*.db' --exclude '.env' \
+            server/ "$DEST/server/"
+          rsync -az --delete -e "$SSH" \
+            bin/ "$DEST/bin/"
+
+      - name: Run provision script
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -p ${{ secrets.DEPLOY_PORT || '22' }} \
+            -o StrictHostKeyChecking=yes \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            "sudo bash /opt/cheat-buster-src/bin/provision-server.sh"
