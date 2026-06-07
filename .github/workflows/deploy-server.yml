@@ -23,23 +23,15 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -p ${{ secrets.DEPLOY_PORT || '22' }} -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Prepare remote directory
-        run: |
-          ssh -i ~/.ssh/deploy_key \
-            -p ${{ secrets.DEPLOY_PORT || '22' }} \
-            -o StrictHostKeyChecking=yes \
-            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
-            "sudo mkdir -p /opt/cheat-buster-src && sudo chown -R ${{ secrets.DEPLOY_USER }}:${{ secrets.DEPLOY_USER }} /opt/cheat-buster-src"
-
       - name: Rsync files to server
         run: |
           SSH="ssh -i ~/.ssh/deploy_key -p ${{ secrets.DEPLOY_PORT || '22' }} -o StrictHostKeyChecking=yes"
           DEST="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/cheat-buster-src"
-          rsync -az --delete -e "$SSH" \
+          rsync -az --delete -e "$SSH" --rsync-path="sudo rsync" \
             --exclude '__pycache__' --exclude '*.pyc' \
             --exclude '.venv' --exclude '*.db' --exclude '.env' \
             server/ "$DEST/server/"
-          rsync -az --delete -e "$SSH" \
+          rsync -az --delete -e "$SSH" --rsync-path="sudo rsync" \
             bin/ "$DEST/bin/"
 
       - name: Run provision script
