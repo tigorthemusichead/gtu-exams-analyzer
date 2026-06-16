@@ -45,3 +45,5 @@ htmlcov/
 # Alembic (keep versions, ignore compiled)
 server/alembic/__pycache__/
 /.playwright-mcp/
+/.claude/
+/management/

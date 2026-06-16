@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import json
+from collections import defaultdict
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import delete as sql_delete
 from sqlalchemy import select
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +19,7 @@ from app.models.models import (
     AnalysisResult,
     Commit,
     Exam,
+    MatchedCommitPair,
     SimilarityPair,
 )
 from app.schemas.schemas import (
@@ -55,16 +58,8 @@ async def _get_exam_or_raise(
 # ---------------------------------------------------------------------------
 
 
-@router.post("/analysis/{exam_id}", response_model=AnalysisTriggerResponse)
-async def trigger_analysis(
-    exam_id: int,
-    payload: dict = Depends(require_teacher),
-    db: AsyncSession = Depends(get_db),
-) -> AnalysisTriggerResponse:
-    teacher_id: int = int(payload["sub"])
-    exam = await _get_exam_or_raise(exam_id, teacher_id, db)
-
-    # --- Load commits grouped by student ---
+async def _run_analysis(exam_id: int, db: AsyncSession) -> tuple[int, int, str]:
+    """Run individual + group analysis and upsert results. Returns (individual_count, edge_count, analyzed_at)."""
     commits_result = await db.execute(
         select(Commit).where(Commit.exam_id == exam_id)
     )
@@ -84,14 +79,12 @@ async def trigger_analysis(
         )
         commits_by_student.setdefault(c.student_id, []).append(rec)
 
-    # --- Collect cohort first commits for late-start detection ---
     cohort_first_commits: list[str] = []
     for student_commits_iter in commits_by_student.values():
         sorted_sc = sorted(student_commits_iter, key=lambda c: c.timestamp)
         if sorted_sc:
             cohort_first_commits.append(sorted_sc[0].timestamp)
 
-    # --- Individual analysis ---
     analyzed_at = _now_iso()
     individual_count = 0
 
@@ -129,9 +122,7 @@ async def trigger_analysis(
         await db.execute(stmt)
         individual_count += 1
 
-    # --- Group analysis ---
-    # Store ALL pairs (threshold=0) so the D3 report graph can filter client-side.
-    # The SUSPECT_SIMILARITY_THRESHOLD is applied during report generation.
+    # Store ALL pairs (threshold=0) so D3 report graph can filter client-side.
     group_result = analyze_group(
         commits_by_student=commits_by_student,
         weight_cosine=settings.SIMILARITY_WEIGHT_COSINE,
@@ -166,9 +157,85 @@ async def trigger_analysis(
             },
         )
         await db.execute(stmt)
+        await db.flush()
+
+        pair_result = await db.execute(
+            select(SimilarityPair.pair_id).where(
+                SimilarityPair.exam_id == exam_id,
+                SimilarityPair.student_a_id == a_id,
+                SimilarityPair.student_b_id == b_id,
+            )
+        )
+        pair_id = pair_result.scalar_one()
+
+        await db.execute(
+            sql_delete(MatchedCommitPair).where(MatchedCommitPair.pair_id == pair_id)
+        )
+        for match in edge.details.get("sequential_matches", []):
+            db.add(MatchedCommitPair(
+                pair_id=pair_id,
+                match_type="sequential",
+                commit_a_id=match["commit_a"],
+                commit_b_id=match["commit_b"],
+                jaccard_score=match["similarity"],
+                timestamp_a=match["timestamp_a"],
+                timestamp_b=match["timestamp_b"],
+                diff_a=match.get("diff_a"),
+                diff_b=match.get("diff_b"),
+                exercise_id=match["exercise_id"],
+                file_name=match["file_name"],
+                who_first=match["who_first"],
+            ))
+        for match in edge.details.get("cosine_matches", []):
+            db.add(MatchedCommitPair(
+                pair_id=pair_id,
+                match_type="cosine",
+                commit_a_id=None,
+                commit_b_id=None,
+                jaccard_score=match["similarity"],
+                timestamp_a=None,
+                timestamp_b=None,
+                diff_a=match.get("snippet_a"),
+                diff_b=match.get("snippet_b"),
+                exercise_id=match["exercise_id"],
+                file_name=match["file_name"],
+                file_name_b=match.get("file_name_b"),
+                who_first=None,
+            ))
+        for match in edge.details.get("structural_matches", []):
+            db.add(MatchedCommitPair(
+                pair_id=pair_id,
+                match_type="structural",
+                commit_a_id=None,
+                commit_b_id=None,
+                jaccard_score=match["similarity"],
+                timestamp_a=None,
+                timestamp_b=None,
+                diff_a=json.dumps(match.get("tokens_a", [])),
+                diff_b=json.dumps(match.get("tokens_b", [])),
+                exercise_id=match["exercise_id"],
+                file_name=match["file_name"],
+                file_name_b=match.get("file_name_b"),
+                who_first=None,
+                extra_data=json.dumps({"shared_tokens": match.get("shared_tokens", [])}),
+            ))
+
         edge_count += 1
 
     await db.commit()
+    return individual_count, edge_count, analyzed_at
+
+
+@router.post("/analysis/{exam_id}", response_model=AnalysisTriggerResponse)
+async def trigger_analysis(
+    exam_id: int,
+    payload: dict = Depends(require_teacher),
+    db: AsyncSession = Depends(get_db),
+) -> AnalysisTriggerResponse:
+    teacher_id: int = int(payload["sub"])
+    await _get_exam_or_raise(exam_id, teacher_id, db)
+
+    individual_count, edge_count, _ = await _run_analysis(exam_id, db)
 
     return AnalysisTriggerResponse(
         exam_id=exam_id,
@@ -222,10 +289,62 @@ async def get_report(
     )
     pair_rows = sp_result.scalars().all()
 
+    # Load matched commit pairs from normalized table, grouped by pair_id
+    mcp_result = await db.execute(
+        select(MatchedCommitPair)
+        .join(SimilarityPair, MatchedCommitPair.pair_id == SimilarityPair.pair_id)
+        .where(SimilarityPair.exam_id == exam_id)
+    )
+    mcp_by_pair: dict[int, list] = defaultdict(list)
+    for mcp in mcp_result.scalars().all():
+        mcp_by_pair[mcp.pair_id].append(mcp)
+
     nodes: list[int] = list({row.student_id for row in analysis_rows})
     edges: list[SimilarityEdgeSchema] = []
     for row in pair_rows:
         details_dict: dict = json.loads(row.details) if row.details else {}
+        all_mcps = sorted(mcp_by_pair.get(row.pair_id, []), key=lambda x: x.jaccard_score, reverse=True)
+
+        details_dict["sequential_matches"] = [
+            {
+                "commit_a": m.commit_a_id,
+                "commit_b": m.commit_b_id,
+                "similarity": m.jaccard_score,
+                "timestamp_a": m.timestamp_a,
+                "timestamp_b": m.timestamp_b,
+                "diff_a": m.diff_a,
+                "diff_b": m.diff_b,
+                "exercise_id": m.exercise_id,
+                "file_name": m.file_name,
+                "who_first": m.who_first,
+            }
+            for m in all_mcps if m.match_type == "sequential"
+        ]
+        details_dict["cosine_matches"] = [
+            {
+                "exercise_id": m.exercise_id,
+                "file_name": m.file_name,
+                "file_name_b": m.file_name_b or m.file_name,
+                "renamed": m.file_name_b is not None and m.file_name_b != m.file_name,
+                "similarity": m.jaccard_score,
+                "snippet_a": m.diff_a,
+                "snippet_b": m.diff_b,
+            }
+            for m in all_mcps if m.match_type == "cosine"
+        ]
+        details_dict["structural_matches"] = [
+            {
+                "exercise_id": m.exercise_id,
+                "file_name": m.file_name,
+                "file_name_b": m.file_name_b or m.file_name,
+                "renamed": m.file_name_b is not None and m.file_name_b != m.file_name,
+                "similarity": m.jaccard_score,
+                "tokens_a": json.loads(m.diff_a or "[]"),
+                "tokens_b": json.loads(m.diff_b or "[]"),
+                "shared_tokens": json.loads(m.extra_data or "{}").get("shared_tokens", []),
+            }
+            for m in all_mcps if m.match_type == "structural"
+        ]
         edges.append(
             SimilarityEdgeSchema(
                 student_a=row.student_a_id,

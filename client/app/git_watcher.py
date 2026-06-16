@@ -1,17 +1,21 @@
 """
 Background git watcher. Uses QTimer to periodically:
-1. Check for uncommitted changes (git diff --stat HEAD or check untracked)
-2. If changes exist: git add . && git commit -m "auto: <timestamp>"
+1. Check for uncommitted changes (untracked, modified, staged)
+2. If changes exist: stage all + commit "auto: <timestamp>"
 3. For each changed file: POST /commits with lines_added/lines_removed
 4. If no changes: skip (no empty commits)
 
 Uses QThread + QObject worker pattern for non-blocking operation.
 """
+import io
 import logging
+import os
 from datetime import datetime, timezone
-from typing import Callable
 
-import git
+from dulwich import porcelain
+from dulwich.diff_tree import tree_changes
+from dulwich.patch import write_object_diff
+from dulwich.repo import Repo
 from PyQt6.QtCore import QObject, QThread, QTimer, pyqtSignal
 
 from app.api import api_client
@@ -52,74 +56,80 @@ class WatcherWorker(QObject):
 
     def _run_cycle(self):
         try:
-            repo = git.Repo(self.repo_path)
+            repo = Repo(self.repo_path)
+            status = porcelain.status(repo)
 
-            # Check for changes: untracked files or modified files
-            has_changes = (
-                bool(repo.untracked_files)
-                or bool(repo.index.diff(None))
-                or bool(repo.index.diff("HEAD"))
+            has_changes = bool(
+                status.staged["add"]
+                or status.staged["modify"]
+                or status.staged["delete"]
+                or status.unstaged
+                or status.untracked
             )
-
-            if not has_changes:
-                # Also check if there's anything to stage that differs from HEAD
-                try:
-                    diff_stat = repo.git.diff("HEAD", "--stat")
-                    has_changes = bool(diff_stat.strip())
-                except git.GitCommandError:
-                    # No commits yet — check for untracked
-                    has_changes = bool(repo.untracked_files)
 
             if not has_changes:
                 self.status_changed.emit("No changes")
                 return
 
-            # Stage all changes
-            repo.git.add(".")
+            # Stage all changed and untracked files
+            all_paths = list(status.untracked) + list(status.unstaged)
+            if all_paths:
+                porcelain.add(repo, paths=all_paths)
 
             # Commit
             timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             commit_msg = f"auto: {timestamp}"
 
             try:
-                commit = repo.index.commit(commit_msg)
-            except Exception as e:
-                # Nothing to commit after add (edge case)
+                conf = repo.get_config()
+                name = conf.get((b"user",), b"name").decode()
+                email = conf.get((b"user",), b"email").decode()
+                identity = f"{name} <{email}>".encode()
+                commit_sha = porcelain.commit(
+                    repo,
+                    message=commit_msg.encode(),
+                    author=identity,
+                    committer=identity,
+                )
+            except Exception:
                 self.status_changed.emit("No changes to commit")
                 return
 
-            # Parse diff for lines added/removed per file
+            commit_id = commit_sha.decode() if isinstance(commit_sha, bytes) else commit_sha
+            commit_obj = repo[commit_sha]
+            parent_tree_id = repo[commit_obj.parents[0]].tree if commit_obj.parents else None
+
             try:
-                parent = commit.parents[0] if commit.parents else None
-                if parent:
-                    diffs = parent.diff(commit, create_patch=True)
-                else:
-                    # First commit — diff against empty tree
-                    diffs = commit.diff(git.NULL_TREE, create_patch=True)
+                changes = list(tree_changes(repo.object_store, parent_tree_id, commit_obj.tree))
             except Exception:
-                diffs = []
+                changes = []
 
             payloads = []
-            for diff in diffs:
+            for change in changes:
+                buf = io.BytesIO()
+                try:
+                    write_object_diff(buf, repo.object_store, change.old, change.new)
+                except Exception:
+                    pass
+                diff_bytes = buf.getvalue()
+
                 lines_added = 0
                 lines_removed = 0
                 diff_text = None
-                if diff.diff:
-                    diff_text = (
-                        diff.diff.decode("utf-8", errors="replace")
-                        if isinstance(diff.diff, bytes)
-                        else diff.diff
-                    )
+                if diff_bytes:
+                    diff_text = diff_bytes.decode("utf-8", errors="replace")
                     for line in diff_text.splitlines():
                         if line.startswith("+") and not line.startswith("+++"):
                             lines_added += 1
                         elif line.startswith("-") and not line.startswith("---"):
                             lines_removed += 1
 
-                file_name = diff.b_path or diff.a_path or "unknown"
+                raw_path = change.new.path if change.new.path else change.old.path
+                file_name = raw_path.decode() if isinstance(raw_path, bytes) else (raw_path or "unknown")
+
                 payloads.append(
                     {
-                        "commit_id": commit.hexsha,
+                        "commit_id": commit_id,
                         "timestamp": timestamp,
                         "exercise_id": "default",
                         "file_name": file_name,
@@ -141,7 +151,6 @@ class WatcherWorker(QObject):
                     else:
                         self.error_occurred.emit(f"Server error {resp.status_code}")
                 except Exception as e:
-                    # Network failure — non-fatal, will retry next cycle
                     self.error_occurred.emit(f"Network error: {e}")
                     logger.warning("POST /commits failed: %s", e)
 

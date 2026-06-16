@@ -2,12 +2,17 @@
 
 ## Backlog
 
-- [TASK-033] Add AST analysis for C++, C, C#, Java, JavaScript
-
 ## In Progress
 
 ## Done
 
+- [TASK-041] Cross-File Similarity Within Same Exercise
+- [TASK-040] Per-File AST Structural Identifier Pairs
+- [TASK-039] Per-File Cosine Similarity Pairs
+- [TASK-038] Normalize matched commit pairs into separate DB table + frontend Jaccard slider
+- [TASK-037] Allow teacher to regenerate exam analysis
+- [TASK-033] Add AST analysis for C++, C, C#, Java, JavaScript
+- [TASK-036] Migrate client git engine from GitPython to dulwich
 - [TASK-035] Add Windows build with ad-hoc signing
 - [TASK-034] Bundle client for macOS DMG
 - [TASK-032] Cohort-relative late start detection

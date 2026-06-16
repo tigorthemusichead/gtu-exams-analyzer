@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.database import get_db
@@ -137,8 +137,8 @@ async def exam_report_page(
     payload: dict = Depends(require_teacher_web),
     db: AsyncSession = Depends(get_db),
 ):
-    from app.routers.analysis import get_report as _get_report
-    from app.models.models import SimilarityPair
+    from app.models.models import MatchedCommitPair, SimilarityPair
+    from collections import defaultdict as _defaultdict
 
     result = await db.execute(select(Exam).where(Exam.exam_id == exam_id))
     exam = result.scalar_one_or_none()
@@ -155,6 +155,16 @@ async def exam_report_page(
         select(SimilarityPair).where(SimilarityPair.exam_id == exam_id)
     )
     pair_rows = sp_result.scalars().all()
+
+    # Load matched commit pairs from normalized table, grouped by pair_id
+    mcp_result = await db.execute(
+        select(MatchedCommitPair)
+        .join(SimilarityPair, MatchedCommitPair.pair_id == SimilarityPair.pair_id)
+        .where(SimilarityPair.exam_id == exam_id)
+    )
+    mcp_by_pair: dict = _defaultdict(list)
+    for mcp in mcp_result.scalars().all():
+        mcp_by_pair[mcp.pair_id].append(mcp)
 
     from app.config import settings
     from app.schemas.schemas import (
@@ -196,6 +206,47 @@ async def exam_report_page(
     edges = []
     for row in pair_rows:
         details_dict = _json.loads(row.details) if row.details else {}
+        all_mcps = sorted(mcp_by_pair.get(row.pair_id, []), key=lambda x: x.jaccard_score, reverse=True)
+        details_dict["sequential_matches"] = [
+            {
+                "commit_a": m.commit_a_id,
+                "commit_b": m.commit_b_id,
+                "similarity": m.jaccard_score,
+                "timestamp_a": m.timestamp_a,
+                "timestamp_b": m.timestamp_b,
+                "diff_a": m.diff_a,
+                "diff_b": m.diff_b,
+                "exercise_id": m.exercise_id,
+                "file_name": m.file_name,
+                "who_first": m.who_first,
+            }
+            for m in all_mcps if m.match_type == "sequential"
+        ]
+        details_dict["cosine_matches"] = [
+            {
+                "exercise_id": m.exercise_id,
+                "file_name": m.file_name,
+                "file_name_b": m.file_name_b or m.file_name,
+                "renamed": m.file_name_b is not None and m.file_name_b != m.file_name,
+                "similarity": m.jaccard_score,
+                "snippet_a": m.diff_a,
+                "snippet_b": m.diff_b,
+            }
+            for m in all_mcps if m.match_type == "cosine"
+        ]
+        details_dict["structural_matches"] = [
+            {
+                "exercise_id": m.exercise_id,
+                "file_name": m.file_name,
+                "file_name_b": m.file_name_b or m.file_name,
+                "renamed": m.file_name_b is not None and m.file_name_b != m.file_name,
+                "similarity": m.jaccard_score,
+                "tokens_a": _json.loads(m.diff_a or "[]"),
+                "tokens_b": _json.loads(m.diff_b or "[]"),
+                "shared_tokens": _json.loads(m.extra_data or "{}").get("shared_tokens", []),
+            }
+            for m in all_mcps if m.match_type == "structural"
+        ]
         edges.append(SimilarityEdgeSchema(
             student_a=row.student_a_id,
             student_b=row.student_b_id,
@@ -205,6 +256,8 @@ async def exam_report_page(
         if row.similarity_score > settings.SUSPECT_SIMILARITY_THRESHOLD:
             suspect_set.add(row.student_a_id)
             suspect_set.add(row.student_b_id)
+
+    analyzed_at = max((row.analyzed_at for row in analysis_rows), default=None)
 
     nodes = list({row.student_id for row in analysis_rows})
     group = GroupResultSchema(nodes=nodes, edges=edges)
@@ -239,5 +292,30 @@ async def exam_report_page(
             "student_emails": student_emails,
             "student_emails_json": _json.dumps({str(k): v for k, v in student_emails.items()}),
             "anomaly_suspect_ids": anomaly_suspect_ids,
+            "analyzed_at": analyzed_at,
         },
     )
+
+
+@router.post("/exams/{exam_id}/regenerate")
+async def exam_regenerate(
+    exam_id: int,
+    payload: dict = Depends(require_teacher_web),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.routers.analysis import _run_analysis
+
+    result = await db.execute(select(Exam).where(Exam.exam_id == exam_id))
+    exam = result.scalar_one_or_none()
+    if exam is None:
+        return JSONResponse({"error": "Exam not found"}, status_code=404)
+    if exam.teacher_id != int(payload["sub"]):
+        return JSONResponse({"error": "Forbidden"}, status_code=403)
+
+    individual_count, edge_count, analyzed_at = await _run_analysis(exam_id, db)
+    return JSONResponse({
+        "status": "completed",
+        "individual_count": individual_count,
+        "edge_count": edge_count,
+        "analyzed_at": analyzed_at,
+    })

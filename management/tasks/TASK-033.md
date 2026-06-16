@@ -1,8 +1,8 @@
 # TASK-033: Add AST analysis for C++, C, C#, Java, JavaScript
 
-status: backlog
+status: done
 created: 2026-06-07
-updated: 2026-06-07
+updated: 2026-06-16
 
 ## Description
 

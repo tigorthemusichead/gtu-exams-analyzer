@@ -10,7 +10,7 @@ requires-python = ">=3.11"
 dependencies = [
     "PyQt6",
     "httpx",
-    "gitpython",
+    "dulwich>=0.21",
     "python-dotenv",
 ]
 

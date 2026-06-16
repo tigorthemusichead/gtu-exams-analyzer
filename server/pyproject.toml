@@ -23,6 +23,13 @@ dependencies = [
     "python-multipart",
     "scikit-learn",
     "bcrypt",
+    "tree-sitter>=0.22",
+    "tree-sitter-c",
+    "tree-sitter-cpp",
+    "tree-sitter-c-sharp",
+    "tree-sitter-java",
+    "tree-sitter-javascript",
+    "tree-sitter-typescript",
 ]
 
 [project.optional-dependencies]

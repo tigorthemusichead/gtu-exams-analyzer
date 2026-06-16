@@ -231,3 +231,33 @@ class SimilarityPair(Base):
     student_b: Mapped["User"] = relationship(
         "User", foreign_keys=[student_b_id]
     )
+    matched_commit_pairs: Mapped[list["MatchedCommitPair"]] = relationship(
+        "MatchedCommitPair", back_populates="similarity_pair", cascade="all, delete-orphan"
+    )
+
+
+class MatchedCommitPair(Base):
+    __tablename__ = "matched_commit_pairs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    pair_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("similarity_pairs.pair_id"), nullable=False
+    )
+    match_type: Mapped[str] = mapped_column(Text, nullable=False, server_default="sequential")
+    commit_a_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    commit_b_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    jaccard_score: Mapped[float] = mapped_column(Float, nullable=False)
+    timestamp_a: Mapped[str | None] = mapped_column(Text, nullable=True)
+    timestamp_b: Mapped[str | None] = mapped_column(Text, nullable=True)
+    diff_a: Mapped[str | None] = mapped_column(Text, nullable=True)
+    diff_b: Mapped[str | None] = mapped_column(Text, nullable=True)
+    exercise_id: Mapped[str] = mapped_column(Text, nullable=False)
+    file_name: Mapped[str] = mapped_column(Text, nullable=False)
+    file_name_b: Mapped[str | None] = mapped_column(Text, nullable=True)
+    who_first: Mapped[str | None] = mapped_column(Text, nullable=True)
+    extra_data: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Relationships
+    similarity_pair: Mapped["SimilarityPair"] = relationship(
+        "SimilarityPair", back_populates="matched_commit_pairs"
+    )

@@ -221,7 +221,7 @@ def analyze_student(
 
     all_events = burst_events + late_start_events + gap_events
 
-    # --- Score formula ---
+    # # --- Score formula ---
     # Bursts: +0.3 each, capped at 0.6
     burst_score = min(len(burst_events) * 0.3, 0.6)
     # Late start: +0.4

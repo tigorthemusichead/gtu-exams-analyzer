@@ -1,6 +1,7 @@
 import os
 
-import git  # gitpython
+from dulwich.errors import NotGitRepository
+from dulwich.repo import Repo
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
@@ -122,15 +123,15 @@ class DirPickerWindow(QWidget):
             return
         try:
             try:
-                repo = git.Repo(self._selected_path)
-                # Existing repo — reuse
-            except git.InvalidGitRepositoryError:
-                repo = git.Repo.init(self._selected_path)
+                repo = Repo(self._selected_path)
+            except NotGitRepository:
+                repo = Repo.init(self._selected_path)
 
             # Set git identity from student auth
-            with repo.config_writer() as cfg:
-                cfg.set_value("user", "name", self.student_email)
-                cfg.set_value("user", "email", self.student_email)
+            conf = repo.get_config()
+            conf.set((b"user",), b"name", self.student_email.encode())
+            conf.set((b"user",), b"email", self.student_email.encode())
+            conf.write_to_path()
 
             self.session_ready.emit(self._selected_path)
         except Exception as e:

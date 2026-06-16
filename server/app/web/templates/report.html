@@ -9,11 +9,19 @@
   <p>Group {{ exam.group_number }} &middot; {{ exam.exam_date }}</p>
 </hgroup>
 
+<div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;">
+  <button id="regen-btn" onclick="regenerateAnalysis()">Regenerate Analysis</button>
+  <small id="analyzed-at-label" style="opacity:0.7;">
+    {% if analyzed_at %}Last analyzed: <span id="analyzed-at-value">{{ analyzed_at }}</span>{% endif %}
+  </small>
+  <span id="regen-status" style="display:none;"></span>
+</div>
+
 <section>
   <h3>Similarity Graph</h3>
   <div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.5rem;">
     <label style="margin:0;">Threshold:
-      <input type="range" id="threshold-slider" min="0" max="1" step="0.05" value="0.6" style="width:200px;vertical-align:middle;">
+      <input type="range" id="threshold-slider" min="0" max="1" step="0.01" value="0.6" style="width:200px;vertical-align:middle;">
       <span id="threshold-value">0.60</span>
     </label>
   </div>
@@ -37,9 +45,25 @@
       <dt>Structural</dt><dd id="modal-structural"></dd>
       <dt>Sequential</dt><dd id="modal-sequential"></dd>
     </dl>
-    <section id="modal-seq-matches" hidden>
-      <h5>Sequential commit matches</h5>
+    <div id="modal-match-tabs" style="display:flex;gap:0;border-bottom:1px solid var(--pico-muted-border-color);margin-top:1rem;">
+      <button class="match-tab" data-tab="sequential" style="background:transparent;border:none;border-bottom:2px solid transparent;padding:0.4rem 0.9rem;cursor:pointer;font-size:0.9em;color:inherit;margin-bottom:-1px;">
+        Sequential <span id="tab-badge-sequential" style="display:inline-block;min-width:1.2em;padding:0.05em 0.35em;border-radius:999px;font-size:0.75em;font-weight:bold;background:var(--pico-muted-border-color);color:inherit;text-align:center;margin-left:0.25em;">0</span>
+      </button>
+      <button class="match-tab" data-tab="cosine" style="background:transparent;border:none;border-bottom:2px solid transparent;padding:0.4rem 0.9rem;cursor:pointer;font-size:0.9em;color:inherit;margin-bottom:-1px;">
+        Cosine <span id="tab-badge-cosine" style="display:inline-block;min-width:1.2em;padding:0.05em 0.35em;border-radius:999px;font-size:0.75em;font-weight:bold;background:var(--pico-muted-border-color);color:inherit;text-align:center;margin-left:0.25em;">0</span>
+      </button>
+      <button class="match-tab" data-tab="structural" style="background:transparent;border:none;border-bottom:2px solid transparent;padding:0.4rem 0.9rem;cursor:pointer;font-size:0.9em;color:inherit;margin-bottom:-1px;">
+        Structural <span id="tab-badge-structural" style="display:inline-block;min-width:1.2em;padding:0.05em 0.35em;border-radius:999px;font-size:0.75em;font-weight:bold;background:var(--pico-muted-border-color);color:inherit;text-align:center;margin-left:0.25em;">0</span>
+      </button>
+    </div>
+    <section id="modal-seq-matches" hidden style="padding-top:0.75rem;">
       <div id="modal-seq-matches-list"></div>
+    </section>
+    <section id="modal-cosine-matches" hidden style="padding-top:0.75rem;">
+      <div id="modal-cosine-matches-list"></div>
+    </section>
+    <section id="modal-structural-matches" hidden style="padding-top:0.75rem;">
+      <div id="modal-structural-matches-list"></div>
     </section>
   </article>
 </dialog>
@@ -97,6 +121,36 @@
 const REPORT_DATA = {{ report_json | safe }};
 const SUSPECTS = {{ report.suspects | tojson }};
 const EMAIL_MAP = {{ student_emails_json | safe }};
+const EXAM_ID = {{ exam.exam_id }};
 initReport(REPORT_DATA, SUSPECTS, EMAIL_MAP);
+
+async function regenerateAnalysis() {
+  const btn = document.getElementById('regen-btn');
+  const status = document.getElementById('regen-status');
+  btn.disabled = true;
+  btn.setAttribute('aria-busy', 'true');
+  status.style.display = '';
+  status.textContent = 'Running analysis\u2026';
+  status.style.color = '';
+  try {
+    const resp = await fetch(`/exams/${EXAM_ID}/regenerate`, { method: 'POST' });
+    if (!resp.ok) {
+      const body = await resp.json().catch(() => ({}));
+      throw new Error(body.error || `HTTP ${resp.status}`);
+    }
+    const data = await resp.json();
+    status.textContent = `Done \u2014 ${data.individual_count} students, ${data.edge_count} pairs.`;
+    const val = document.getElementById('analyzed-at-value');
+    if (val) val.textContent = data.analyzed_at;
+    const label = document.getElementById('analyzed-at-label');
+    if (label && !val) label.innerHTML = `Last analyzed: <span id="analyzed-at-value">${data.analyzed_at}</span>`;
+    window.location.reload();
+  } catch (err) {
+    status.textContent = `Error: ${err.message}`;
+    status.style.color = 'var(--pico-color-red-500, #f38ba8)';
+    btn.disabled = false;
+    btn.removeAttribute('aria-busy');
+  }
+}
 </script>
 {% endblock %}

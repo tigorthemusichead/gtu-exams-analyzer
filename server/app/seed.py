@@ -12,8 +12,8 @@ from app.database import AsyncSessionLocal, engine
 from app.models.models import Base, User
 from app.services.auth_service import hash_password
 
-TEACHER_EMAIL = "teacher@test.com"
-TEACHER_PASSWORD = "secret"
+TEACHER_EMAIL = "teacher@gtu.ge"
+TEACHER_PASSWORD = "Test!!123"
 
 
 async def seed() -> None:

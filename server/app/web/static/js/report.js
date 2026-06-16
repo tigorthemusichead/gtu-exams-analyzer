@@ -152,6 +152,41 @@ function initReport(reportData, suspects, emailMap) {
   document.getElementById('modal-close').addEventListener('click', () => modal.close());
   modal.addEventListener('click', e => { if (e.target === modal) modal.close(); });
 
+  let currentModalDetails = null;
+
+  // --- Match tabs ---
+  const _tabSections = {
+    sequential: document.getElementById('modal-seq-matches'),
+    cosine: document.getElementById('modal-cosine-matches'),
+    structural: document.getElementById('modal-structural-matches'),
+  };
+  const _tabButtons = document.querySelectorAll('.match-tab');
+
+  function switchMatchTab(name) {
+    _tabButtons.forEach(btn => {
+      const active = btn.dataset.tab === name;
+      btn.style.borderBottomColor = active ? 'var(--pico-primary, #89b4fa)' : 'transparent';
+      btn.style.color = active ? 'var(--pico-primary, #89b4fa)' : 'inherit';
+      btn.style.fontWeight = active ? '600' : 'normal';
+    });
+    Object.entries(_tabSections).forEach(([key, sec]) => { sec.hidden = key !== name; });
+  }
+
+  _tabButtons.forEach(btn => btn.addEventListener('click', () => switchMatchTab(btn.dataset.tab)));
+
+  function initMatchTabs(details) {
+    const counts = {
+      sequential: (details.sequential_matches || []).length,
+      cosine: (details.cosine_matches || []).length,
+      structural: (details.structural_matches || []).length,
+    };
+    document.getElementById('tab-badge-sequential').textContent = counts.sequential;
+    document.getElementById('tab-badge-cosine').textContent = counts.cosine;
+    document.getElementById('tab-badge-structural').textContent = counts.structural;
+    const first = ['sequential', 'cosine', 'structural'].find(k => counts[k] > 0) || 'sequential';
+    switchMatchTab(first);
+  }
+
   function fmtDelta(tsA, tsB) {
     const diff = Math.round(Math.abs(new Date(tsA) - new Date(tsB)) / 1000);
     const m = Math.floor(diff / 60);
@@ -163,22 +198,15 @@ function initReport(reportData, suspects, emailMap) {
     return new Date(ts).toTimeString().slice(0, 8);
   }
 
-  function showModal(d) {
-    const aId = d.source.id ?? d.source;
-    const bId = d.target.id ?? d.target;
-    document.getElementById('modal-a').textContent = emailMap[aId] || `Student ${aId}`;
-    document.getElementById('modal-b').textContent = emailMap[bId] || `Student ${bId}`;
-    document.getElementById('modal-score').textContent = d.score.toFixed(4);
-    document.getElementById('modal-cosine').textContent = (d.details.cosine ?? 0).toFixed(4);
-    document.getElementById('modal-structural').textContent = (d.details.structural ?? 0).toFixed(4);
-    document.getElementById('modal-sequential').textContent = (d.details.sequential ?? 0).toFixed(4);
-
-    const seqSection = document.getElementById('modal-seq-matches');
+  function renderSeqMatches(details) {
     const seqList = document.getElementById('modal-seq-matches-list');
-    const matches = d.details.sequential_matches;
-    if (matches && matches.length > 0) {
-      const n = matches.length;
-      const seqScore = d.details.sequential ?? 0;
+    const matches = details.sequential_matches || [];
+    if (matches.length === 0) {
+      seqList.innerHTML = '<p style="opacity:0.6;font-size:0.9em;">No sequential commit matches found.</p>';
+      return;
+    }
+    const n = matches.length;
+      const seqScore = details.sequential ?? 0;
 
       const totalDeltaSec = matches.reduce((sum, m) => {
         return sum + Math.abs(new Date(m.timestamp_a) - new Date(m.timestamp_b)) / 1000;
@@ -217,6 +245,7 @@ function initReport(reportData, suspects, emailMap) {
       `;
 
       seqList.innerHTML = statsHtml + matches.map(m => {
+
         const deltaSec = Math.round(Math.abs(new Date(m.timestamp_a) - new Date(m.timestamp_b)) / 1000);
         const deltaLabel = deltaSec === 0 ? '\u0394 = 0'
           : deltaSec < 60 ? `+${deltaSec}s`
@@ -261,10 +290,121 @@ function initReport(reportData, suspects, emailMap) {
           </div>
         `;
       }).join('');
-      seqSection.hidden = false;
-    } else {
-      seqSection.hidden = true;
+  }
+
+  function similarityBadgeStyle(sim) {
+    if (sim >= 0.8) return 'background:#f38ba8;color:#1e1e2e;';
+    if (sim >= 0.6) return 'background:#fab387;color:#1e1e2e;';
+    return 'background:#f9e2af;color:#1e1e2e;';
+  }
+
+  function renderCosineMatches(details) {
+    const list = document.getElementById('modal-cosine-matches-list');
+    const matches = details.cosine_matches || [];
+    if (matches.length === 0) {
+      list.innerHTML = '<p style="opacity:0.6;font-size:0.9em;">No cosine file matches found.</p>';
+      return;
     }
+    list.innerHTML = matches.map(m => {
+      const pct = (m.similarity * 100).toFixed(0);
+      const badgeStyle = similarityBadgeStyle(m.similarity);
+      const fileLabel = m.renamed
+        ? `${escHtml(m.file_name)} \u2192 ${escHtml(m.file_name_b || m.file_name)}`
+        : escHtml(m.file_name);
+      const renamedBadge = m.renamed
+        ? ` <span style="padding:0.1rem 0.3rem;border-radius:3px;font-size:0.75em;font-weight:bold;background:#fab387;color:#1e1e2e;">renamed</span>`
+        : '';
+      const exLabel = `${escHtml(m.exercise_id)} / ${fileLabel}${renamedBadge}`;
+      return `
+        <div style="border:1px solid var(--pico-muted-border-color);border-radius:var(--pico-border-radius);padding:0.5rem;margin-bottom:0.5rem;">
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;flex-wrap:wrap;">
+            <span style="font-size:0.8em;opacity:0.8;">${exLabel}</span>
+            <span style="padding:0.1rem 0.4rem;border-radius:3px;font-size:0.8em;font-weight:bold;${badgeStyle}">${pct}% cosine</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+            <pre style="margin:0;font-size:0.75em;overflow:auto;max-height:160px;">${escHtml(m.snippet_a || '')}</pre>
+            <pre style="margin:0;font-size:0.75em;overflow:auto;max-height:160px;">${escHtml(m.snippet_b || '')}</pre>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderStructuralMatches(details) {
+    const list = document.getElementById('modal-structural-matches-list');
+    const matches = details.structural_matches || [];
+    if (matches.length === 0) {
+      list.innerHTML = '<p style="opacity:0.6;font-size:0.9em;">No structural identifier matches found.</p>';
+      return;
+    }
+    const sharedColor = '#cba6f7';
+    const dimOpacity = '0.5';
+    list.innerHTML = matches.map(m => {
+      const pct = (m.similarity * 100).toFixed(0);
+      const badgeStyle = similarityBadgeStyle(m.similarity);
+      const fileLabel = m.renamed
+        ? `${escHtml(m.file_name)} \u2192 ${escHtml(m.file_name_b || m.file_name)}`
+        : escHtml(m.file_name);
+      const renamedBadge = m.renamed
+        ? ` <span style="padding:0.1rem 0.3rem;border-radius:3px;font-size:0.75em;font-weight:bold;background:#fab387;color:#1e1e2e;">renamed</span>`
+        : '';
+      const exLabel = `${escHtml(m.exercise_id)} / ${fileLabel}${renamedBadge}`;
+      const sharedSet = new Set(m.shared_tokens || []);
+
+      function tokenChips(tokens, highlightShared) {
+        return (tokens || []).map(t => {
+          const isShared = sharedSet.has(t);
+          const style = isShared
+            ? `background:${sharedColor};color:#1e1e2e;font-weight:bold;`
+            : `opacity:${dimOpacity};`;
+          return `<span style="display:inline-block;padding:0.1rem 0.35rem;border-radius:3px;font-size:0.75em;margin:0.1rem;font-family:monospace;${style}">${escHtml(t)}</span>`;
+        }).join('');
+      }
+
+      const sharedChips = (m.shared_tokens || []).map(t =>
+        `<span style="display:inline-block;padding:0.1rem 0.35rem;border-radius:3px;font-size:0.75em;margin:0.1rem;font-family:monospace;font-weight:bold;background:${sharedColor};color:#1e1e2e;">${escHtml(t)}</span>`
+      ).join('');
+
+      return `
+        <div style="border:1px solid var(--pico-muted-border-color);border-radius:var(--pico-border-radius);padding:0.5rem;margin-bottom:0.5rem;">
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;flex-wrap:wrap;">
+            <span style="font-size:0.8em;opacity:0.8;">${exLabel}</span>
+            <span style="padding:0.1rem 0.4rem;border-radius:3px;font-size:0.8em;font-weight:bold;${badgeStyle}">${pct}% Jaccard</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:0.5rem;align-items:start;">
+            <div>
+              <div style="font-size:0.75em;opacity:0.7;margin-bottom:0.2rem;">Student A</div>
+              <div>${tokenChips(m.tokens_a, true)}</div>
+            </div>
+            <div style="min-width:80px;">
+              <div style="font-size:0.75em;opacity:0.7;margin-bottom:0.2rem;text-align:center;">Shared</div>
+              <div style="text-align:center;">${sharedChips}</div>
+            </div>
+            <div>
+              <div style="font-size:0.75em;opacity:0.7;margin-bottom:0.2rem;">Student B</div>
+              <div>${tokenChips(m.tokens_b, true)}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function showModal(d) {
+    const aId = d.source.id ?? d.source;
+    const bId = d.target.id ?? d.target;
+    document.getElementById('modal-a').textContent = emailMap[aId] || `Student ${aId}`;
+    document.getElementById('modal-b').textContent = emailMap[bId] || `Student ${bId}`;
+    document.getElementById('modal-score').textContent = d.score.toFixed(4);
+    document.getElementById('modal-cosine').textContent = (d.details.cosine ?? 0).toFixed(4);
+    document.getElementById('modal-structural').textContent = (d.details.structural ?? 0).toFixed(4);
+    document.getElementById('modal-sequential').textContent = (d.details.sequential ?? 0).toFixed(4);
+
+    currentModalDetails = d.details;
+    renderSeqMatches(d.details);
+    renderCosineMatches(d.details);
+    renderStructuralMatches(d.details);
+    initMatchTabs(d.details);
 
     modal.showModal();
   }
