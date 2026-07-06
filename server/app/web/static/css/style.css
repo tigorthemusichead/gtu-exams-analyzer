@@ -1,4 +1,3 @@
-/* Override Pico primary color — must match Pico's selector specificity (0,2,0) */
 :root:not([data-theme=dark]),
 [data-theme=light] {
   --pico-primary: #5231c9;

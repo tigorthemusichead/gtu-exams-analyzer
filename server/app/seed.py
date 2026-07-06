@@ -1,9 +1,3 @@
-"""Seed script to insert a test teacher into the database.
-
-Run with:
-    python -m app.seed
-"""
-
 import asyncio
 
 from sqlalchemy import select

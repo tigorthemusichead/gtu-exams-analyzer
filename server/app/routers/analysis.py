@@ -1,5 +1,3 @@
-"""Analysis and report endpoints for cheat-buster (TASK-009)."""
-
 from __future__ import annotations
 
 import json

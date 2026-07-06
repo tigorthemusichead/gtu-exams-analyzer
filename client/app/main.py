@@ -61,14 +61,6 @@ class MainApp(QStackedWidget):
         self._watcher.error_occurred.connect(session_win.on_error)
 
     def _on_finish_exam(self):
-        """
-        Full graceful shutdown:
-        1. Stop the countdown timer in session_window (prevent UI updates during shutdown)
-        2. Force final git commit + POST via watcher.flush_and_stop()
-        3. Clear JWT from memory
-        4. Navigate back to auth screen
-        5. Reset watcher reference
-        """
         # Stop UI countdown timer
         if self._session_window and hasattr(self._session_window, '_timer'):
             self._session_window._timer.stop()

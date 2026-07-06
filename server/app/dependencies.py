@@ -1,5 +1,3 @@
-"""FastAPI dependencies for JWT authentication."""
-
 import jwt
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -11,7 +9,6 @@ security = HTTPBearer()
 
 class WebAuthRequired(Exception):
     """Raised by web route deps when teacher cookie is missing or invalid."""
-
 
 async def require_teacher_web(request: Request) -> dict:
     """Validate access_token cookie for HTML web routes.

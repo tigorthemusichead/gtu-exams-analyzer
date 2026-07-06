@@ -1,5 +1,3 @@
-"""Router for commit data ingestion."""
-
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status

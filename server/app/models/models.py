@@ -1,5 +1,3 @@
-"""SQLAlchemy ORM models matching the cheat-buster DB schema."""
-
 from sqlalchemy import (
     CheckConstraint,
     ForeignKey,

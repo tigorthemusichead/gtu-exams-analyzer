@@ -1,8 +1,3 @@
-"""
-GTU-branded stylesheet for cheat-buster Qt client.
-Brand color: #7C3AED (violet-600)
-"""
-
 STYLESHEET = """
 QWidget {
     background-color: #F7F7FF;

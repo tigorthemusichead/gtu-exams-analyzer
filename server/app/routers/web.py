@@ -1,5 +1,3 @@
-"""Teacher web dashboard — HTML routes served by FastAPI (TASK-017)."""
-
 from __future__ import annotations
 
 import json

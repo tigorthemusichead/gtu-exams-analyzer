@@ -1,5 +1,3 @@
-"""JWT helpers and password hashing utilities."""
-
 from datetime import datetime, timedelta, timezone
 
 import bcrypt

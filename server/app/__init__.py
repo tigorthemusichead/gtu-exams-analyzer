@@ -1,1 +1,1 @@
-"""Cheat-Buster server application package."""
+"""Server application package."""

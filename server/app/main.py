@@ -1,5 +1,3 @@
-"""FastAPI application factory."""
-
 from pathlib import Path
 
 from fastapi import FastAPI

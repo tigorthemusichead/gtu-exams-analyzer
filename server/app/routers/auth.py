@@ -1,5 +1,3 @@
-"""Authentication endpoints for students and teachers."""
-
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
