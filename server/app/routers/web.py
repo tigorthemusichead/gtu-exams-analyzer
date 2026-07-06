@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
@@ -292,7 +293,7 @@ async def exam_report_page(
             "student_emails": student_emails,
             "student_emails_json": _json.dumps({str(k): v for k, v in student_emails.items()}),
             "anomaly_suspect_ids": anomaly_suspect_ids,
-            "analyzed_at": analyzed_at,
+            "analyzed_at": datetime.fromisoformat(analyzed_at).strftime("%Y-%m-%d %H:%M"),
         },
     )
 
@@ -317,5 +318,5 @@ async def exam_regenerate(
         "status": "completed",
         "individual_count": individual_count,
         "edge_count": edge_count,
-        "analyzed_at": analyzed_at,
+        "analyzed_at": datetime.fromisoformat(analyzed_at).strftime("%Y-%m-%d %H:%M"),
     })

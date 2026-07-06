@@ -11,7 +11,7 @@
       <input type="text" id="name" name="name" required placeholder="e.g. Python Midterm">
     </label>
     <label>Group Number
-      <input type="text" id="group_number" name="group_number" required placeholder="e.g. CS-301">
+      <input type="text" id="group_number" name="group_number" required placeholder="e.g. 108259">
     </label>
     <label>Date
       <input type="date" id="date" name="date" required>
@@ -20,8 +20,8 @@
       <input type="number" id="duration_minutes" name="duration_minutes" required value="90" min="1">
     </label>
     <p id="error-msg" class="error hidden"></p>
-    <div style="display:flex;gap:1rem;">
-      <button type="submit" id="submit-btn">Create Exam</button>
+    <div style="display:flex;gap:1rem; align-items: center;">
+      <button type="submit" id="submit-btn" style="margin: 0;">Create Exam</button>
       <a href="/dashboard" role="button" class="secondary outline">Cancel</a>
     </div>
   </form>

@@ -47,3 +47,4 @@ server/alembic/__pycache__/
 /.playwright-mcp/
 /.claude/
 /management/
+/.mcp.json

@@ -18,7 +18,7 @@ class ExamWindow(QWidget):
     def __init__(self, exam_id: int, parent=None):
         super().__init__(parent)
         self.exam_id = exam_id
-        self.setWindowTitle("cheat-buster — Exam Confirmed")
+        self.setWindowTitle("GTU exam monitoring — Exam Confirmed")
         self.setMinimumSize(460, 360)
         self._build_ui()
 
@@ -38,7 +38,7 @@ class ExamWindow(QWidget):
         root.addWidget(logo_label)
         root.addSpacing(6)
 
-        app_name = QLabel("cheat-buster")
+        app_name = QLabel("GTU exam monitoring")
         app_name.setAlignment(Qt.AlignmentFlag.AlignCenter)
         app_name.setStyleSheet("color: #6B7280; font-size: 12px; letter-spacing: 0.5px;")
         root.addWidget(app_name)

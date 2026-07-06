@@ -1,12 +1,3 @@
-"""
-Background git watcher. Uses QTimer to periodically:
-1. Check for uncommitted changes (untracked, modified, staged)
-2. If changes exist: stage all + commit "auto: <timestamp>"
-3. For each changed file: POST /commits with lines_added/lines_removed
-4. If no changes: skip (no empty commits)
-
-Uses QThread + QObject worker pattern for non-blocking operation.
-"""
 import io
 import logging
 import os
@@ -24,11 +15,10 @@ logger = logging.getLogger(__name__)
 
 
 class WatcherWorker(QObject):
-    """Worker that runs inside a QThread."""
 
-    commit_sent = pyqtSignal(int)       # emits count of files POSTed
-    error_occurred = pyqtSignal(str)    # non-fatal error message
-    status_changed = pyqtSignal(str)    # status text for UI
+    commit_sent = pyqtSignal(int)
+    error_occurred = pyqtSignal(str)
+    status_changed = pyqtSignal(str)
 
     def __init__(self, repo_path: str, interval_seconds: int = 30):
         super().__init__()
@@ -38,7 +28,7 @@ class WatcherWorker(QObject):
         self._commit_count: int = 0
 
     def start_timer(self):
-        """Called in the worker thread context."""
+
         self._timer = QTimer()
         self._timer.setInterval(self.interval_seconds * 1000)
         self._timer.timeout.connect(self._run_cycle)
@@ -51,7 +41,6 @@ class WatcherWorker(QObject):
             self._timer.stop()
 
     def run_cycle_now(self):
-        """Force an immediate cycle (used for final flush on session end)."""
         self._run_cycle()
 
     def _run_cycle(self):
@@ -71,12 +60,12 @@ class WatcherWorker(QObject):
                 self.status_changed.emit("No changes")
                 return
 
-            # Stage all changed and untracked files
+
             all_paths = list(status.untracked) + list(status.unstaged)
             if all_paths:
                 porcelain.add(repo, paths=all_paths)
 
-            # Commit
+
             timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             commit_msg = f"auto: {timestamp}"
 
@@ -160,15 +149,6 @@ class WatcherWorker(QObject):
 
 
 class GitWatcher:
-    """
-    Manages a WatcherWorker running in a QThread.
-    Usage:
-        watcher = GitWatcher(repo_path="/path/to/repo", interval_seconds=30)
-        watcher.commit_sent.connect(my_slot)
-        watcher.start()
-        # ...
-        watcher.flush_and_stop()
-    """
 
     def __init__(self, repo_path: str, interval_seconds: int = 30):
         self.repo_path = repo_path
@@ -200,7 +180,6 @@ class GitWatcher:
         self.is_running = True
 
     def flush_and_stop(self):
-        """Force one final cycle then stop."""
         if self._worker:
             self._worker.run_cycle_now()
         self.stop()

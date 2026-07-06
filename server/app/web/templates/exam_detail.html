@@ -7,6 +7,7 @@
 <div style="display:flex;justify-content:space-between;align-items:center;">
   <hgroup>
     <h2>{{ exam.name }}</h2>
+    <h3>ID экзамена: {{ exam.exam_id }}</h3>
     <p>Group {{ exam.group_number }} &middot; {{ exam.exam_date }} &middot; {{ exam.duration_minutes }} min</p>
   </hgroup>
   {% if exam.has_report %}

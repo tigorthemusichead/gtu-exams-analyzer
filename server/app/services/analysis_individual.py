@@ -1,16 +1,8 @@
-"""Individual student commit pattern analysis service.
-
-Pure Python computation module — no FastAPI, no DB queries.
-Receives plain Python objects and returns analysis results.
-"""
-
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 
 def _parse_iso(ts: str) -> datetime:
-    """Parse an ISO 8601 string to an aware datetime (UTC)."""
-    # Handle both 'Z' suffix and '+00:00' offset
     ts = ts.replace("Z", "+00:00")
     dt = datetime.fromisoformat(ts)
     if dt.tzinfo is None:
@@ -22,25 +14,25 @@ def _parse_iso(ts: str) -> datetime:
 class CommitRecord:
     commit_id: str
     student_id: int
-    timestamp: str        # ISO 8601
+    timestamp: str
     lines_added: int
     lines_removed: int
     file_name: str
     exercise_id: str
-    diff_content: str | None = None  # raw diff text for AST extraction
+    diff_content: str | None = None
 
 
 @dataclass
 class AnomalyEvent:
-    type: str    # "burst" | "late_start" | "inactivity_gap"
-    timestamp: str   # when it happened (ISO 8601)
-    detail: str      # human-readable description
+    type: str
+    timestamp: str
+    detail: str
 
 
 @dataclass
 class StudentAnalysisResult:
     student_id: int
-    anomaly_score: float          # 0.0 (normal) to 1.0 (very suspicious)
+    anomaly_score: float
     events: list[AnomalyEvent] = field(default_factory=list)
 
 
@@ -49,16 +41,9 @@ def _detect_bursts(
     burst_lines_threshold: int,
     burst_window_seconds: int,
 ) -> list[AnomalyEvent]:
-    """Slide a window over the sorted commit timeline.
-
-    For each commit i, accumulate lines_added for all commits j where
-    timestamp[j] - timestamp[i] < burst_window_seconds.
-    Fire one AnomalyEvent per detected burst window (deduplicated: once the
-    window that triggered the event advances past the anchor, we move on).
-    """
     events: list[AnomalyEvent] = []
     n = len(sorted_commits)
-    in_burst = False  # simple dedup: don't fire repeatedly for same blob
+    in_burst = False
 
     for i in range(n):
         anchor_dt = _parse_iso(sorted_commits[i].timestamp)
@@ -94,7 +79,6 @@ def _detect_late_start(
     cohort_median_start: datetime,
     late_start_threshold_minutes: int,
 ) -> list[AnomalyEvent]:
-    """Detect whether the student's first commit is after the cohort-relative threshold."""
     from datetime import timedelta
 
     if not sorted_commits:
@@ -123,11 +107,6 @@ def _detect_inactivity_gaps(
     burst_lines_threshold: int,
     burst_window_seconds: int,
 ) -> list[AnomalyEvent]:
-    """Find consecutive pairs of commits with a gap > inactivity_gap_minutes.
-
-    A gap is flagged only when it is followed by a burst (the lines_added in
-    the window immediately after the gap exceed burst_lines_threshold).
-    """
     from datetime import timedelta
 
     events: list[AnomalyEvent] = []
@@ -140,7 +119,6 @@ def _detect_inactivity_gaps(
         gap_seconds = (t_after - t_before).total_seconds()
 
         if gap_seconds > gap_threshold_seconds:
-            # Check whether what follows the gap is a burst
             window_lines = 0
             for j in range(i + 1, n):
                 j_dt = _parse_iso(sorted_commits[j].timestamp)
@@ -173,32 +151,6 @@ def analyze_student(
     late_start_threshold_minutes: int = 15,
     inactivity_gap_minutes: int = 15,
 ) -> StudentAnalysisResult:
-    """Analyse a single student's commit pattern and return an anomaly score.
-
-    Parameters
-    ----------
-    student_id:
-        The student being analysed.
-    commits:
-        All CommitRecord objects belonging to this student for the exam.
-    cohort_first_commits:
-        ISO 8601 timestamps of each cohort student's first commit. Used to
-        compute the median start for late-start detection. Pass [] or None to
-        skip late-start detection.
-    burst_lines_threshold:
-        Lines-added threshold that triggers a burst event (default 200).
-    burst_window_seconds:
-        Time window in seconds used when measuring bursts (default 60).
-    late_start_threshold_minutes:
-        Minutes after cohort median start before a student is flagged (default 15).
-    inactivity_gap_minutes:
-        Minimum gap length (minutes) between consecutive commits that counts as
-        an inactivity period (default 15).
-
-    Returns
-    -------
-    StudentAnalysisResult with anomaly_score in [0.0, 1.0] and event list.
-    """
     if not commits:
         return StudentAnalysisResult(student_id=student_id, anomaly_score=0.0, events=[])
 
@@ -221,12 +173,8 @@ def analyze_student(
 
     all_events = burst_events + late_start_events + gap_events
 
-    # # --- Score formula ---
-    # Bursts: +0.3 each, capped at 0.6
     burst_score = min(len(burst_events) * 0.3, 0.6)
-    # Late start: +0.4
     late_score = 0.4 if late_start_events else 0.0
-    # Inactivity gaps: +0.15 each, capped at 0.3
     gap_score = min(len(gap_events) * 0.15, 0.3)
 
     raw_score = burst_score + late_score + gap_score

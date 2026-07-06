@@ -19,6 +19,7 @@ function initReport(reportData, suspects, emailMap) {
     updateEdgeStyles();
     updateNodeStyles();
     renderSuspectPairs();
+    updateAnomalyTable();
   });
 
   // --- D3 force graph ---
@@ -447,6 +448,23 @@ function initReport(reportData, suspects, emailMap) {
   });
 
   renderSuspectPairs();
+  updateAnomalyTable();
+
+  // --- Anomaly table: Was Collaborating + Status columns ---
+  function updateAnomalyTable() {
+    const collabIds = aboveThresholdIds();
+    document.querySelectorAll('#anomaly-tbody tr[data-student-id]').forEach(row => {
+      const sid = parseInt(row.dataset.studentId);
+      const isCollab = collabIds.has(sid);
+      const isAnomalySuspect = row.dataset.anomalySuspect === 'true';
+      row.querySelector('.collab-td').innerHTML = isCollab
+        ? '<span style="color:#f38ba8;font-weight:bold;">Yes</span>'
+        : '<span style="color:#a6e3a1;">No</span>';
+      row.querySelector('.status-td').innerHTML = (isAnomalySuspect || isCollab)
+        ? '<mark>Suspect</mark>'
+        : 'OK';
+    });
+  }
 
   // --- Anomaly detail modal ---
   const anomalyModal = document.getElementById('anomaly-modal');

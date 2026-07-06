@@ -21,7 +21,7 @@ class DirPickerWindow(QWidget):
         self.exam_id = exam_id
         self.student_email = student_email
         self._selected_path: str | None = None
-        self.setWindowTitle("cheat-buster — Select Working Directory")
+        self.setWindowTitle("GTU exam monitoring — Select Working Directory")
         self.setMinimumSize(540, 300)
         self._build_ui()
 

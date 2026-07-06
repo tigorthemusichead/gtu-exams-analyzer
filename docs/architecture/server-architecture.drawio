@@ -1,0 +1,134 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="srv-arch" name="Серверный модуль">
+    <mxGraphModel dx="1258" dy="775" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="750" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="main" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" value="&lt;b&gt;main.py&lt;/b&gt;&lt;br&gt;FastAPI · регистрация роутеров" vertex="1">
+          <mxGeometry height="50" width="280" x="355" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl-r" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=10;fontColor=#9a7000;align=left;" value="Роутеры" vertex="1">
+          <mxGeometry height="18" width="80" x="130" y="172" as="geometry" />
+        </mxCell>
+        <mxCell id="r-auth" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#d6b656;fontSize=11;" value="&lt;b&gt;/auth&lt;/b&gt;" vertex="1">
+          <mxGeometry height="44" width="120" x="80" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="RSb_qC9Vb1RxhXyv7f2P-3" edge="1" parent="1" source="r-commits" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;curved=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="465" y="290" />
+              <mxPoint x="640" y="290" />
+            </Array>
+            <mxPoint x="405" y="225.9999999999999" as="sourcePoint" />
+            <mxPoint x="640" y="470" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r-commits" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#d6b656;fontSize=11;" value="&lt;b&gt;/commits&lt;/b&gt;" vertex="1">
+          <mxGeometry height="44" width="120" x="405" y="192" as="geometry" />
+        </mxCell>
+        <mxCell id="RSb_qC9Vb1RxhXyv7f2P-5" edge="1" parent="1" source="r-exams" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;curved=0;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="600" y="290" />
+              <mxPoint x="640" y="290" />
+            </Array>
+            <mxPoint x="640" y="470" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r-exams" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#d6b656;fontSize=11;" value="&lt;b&gt;/exams&lt;/b&gt;" vertex="1">
+          <mxGeometry height="44" width="120" x="540" y="192" as="geometry" />
+        </mxCell>
+        <mxCell id="r-analysis" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#d6b656;fontSize=11;" value="&lt;b&gt;/analysis&lt;/b&gt;" vertex="1">
+          <mxGeometry height="44" width="120" x="215" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="RSb_qC9Vb1RxhXyv7f2P-7" edge="1" parent="1" source="r-web" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;curved=0;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="730" y="290" />
+              <mxPoint x="640" y="290" />
+            </Array>
+            <mxPoint x="640" y="470" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r-web" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#d6b656;fontSize=11;" value="&lt;b&gt;/web&lt;/b&gt;" vertex="1">
+          <mxGeometry height="44" width="120" x="670" y="192" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl-s" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=10;fontColor=#b85450;align=left;" value="Сервисы" vertex="1">
+          <mxGeometry height="18" width="80" x="200" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="s-auth" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fce4d6;strokeColor=#b85450;fontSize=10;" value="&lt;b&gt;auth_service&lt;/b&gt;&lt;br&gt;JWT · bcrypt" vertex="1">
+          <mxGeometry height="50" width="120" x="20" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="s-ind" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fce4d6;strokeColor=#b85450;fontSize=10;" value="&lt;b&gt;analysis_individual&lt;/b&gt;&lt;br&gt;late start · burst · gap" vertex="1">
+          <mxGeometry height="50" width="140" x="160" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="s-grp" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fce4d6;strokeColor=#b85450;fontSize=10;" value="&lt;b&gt;analysis_group&lt;/b&gt;&lt;br&gt;cosine · AST · sequential" vertex="1">
+          <mxGeometry height="52" width="157.5" x="350" y="328" as="geometry" />
+        </mxCell>
+        <mxCell id="orm" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" value="&lt;b&gt;SQLAlchemy&lt;/b&gt;&amp;nbsp;ORM" vertex="1">
+          <mxGeometry height="44" width="770" x="30" y="472" as="geometry" />
+        </mxCell>
+        <mxCell id="sqlite" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=11;" value="&lt;b&gt;SQLite&lt;/b&gt;&lt;div&gt;&lt;b&gt;&lt;br&gt;&lt;/b&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="250" x="290" y="568" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="main" style="edgeStyle=orthogonalEdgeStyle;" target="r-auth">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="main" style="edgeStyle=orthogonalEdgeStyle;" target="r-commits">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="main" style="edgeStyle=orthogonalEdgeStyle;" target="r-exams">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="main" style="edgeStyle=orthogonalEdgeStyle;" target="r-analysis">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="main" style="edgeStyle=orthogonalEdgeStyle;" target="r-web">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="r-auth" style="edgeStyle=orthogonalEdgeStyle;" target="s-auth">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="1" source="r-analysis" style="edgeStyle=orthogonalEdgeStyle;" target="s-ind">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" edge="1" parent="1" source="r-analysis" style="edgeStyle=orthogonalEdgeStyle;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="s-grp">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="275" y="280" />
+              <mxPoint x="429" y="280" />
+              <mxPoint x="429" y="328" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e9" edge="1" parent="1" source="s-auth" style="edgeStyle=orthogonalEdgeStyle;" target="orm">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="80" y="430" />
+              <mxPoint x="250" y="430" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e10" edge="1" parent="1" source="s-ind" style="edgeStyle=orthogonalEdgeStyle;" target="orm">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="230" y="427" />
+              <mxPoint x="250" y="427" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e11" edge="1" parent="1" source="s-grp" style="edgeStyle=orthogonalEdgeStyle;" target="orm">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="430" y="427" />
+              <mxPoint x="250" y="427" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e12" edge="1" parent="1" source="orm" style="edgeStyle=orthogonalEdgeStyle;" target="sqlite">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

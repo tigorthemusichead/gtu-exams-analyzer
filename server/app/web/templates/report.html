@@ -18,16 +18,34 @@
 </div>
 
 <section>
-  <h3>Similarity Graph</h3>
-  <div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.5rem;">
-    <label style="margin:0;">Threshold:
-      <input type="range" id="threshold-slider" min="0" max="1" step="0.01" value="0.6" style="width:200px;vertical-align:middle;">
-      <span id="threshold-value">0.60</span>
-    </label>
-  </div>
-  <div id="graph-container" style="border:1px solid var(--pico-muted-border-color);border-radius:var(--pico-border-radius);overflow:hidden;">
-    <svg id="similarity-graph" style="width:100%;height:520px;"></svg>
-  </div>
+    <h3>Similarity Graph</h3>
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.5rem;">
+        <label style="margin:0;">Threshold:
+            <input type="range" id="threshold-slider" min="0" max="1" step="0.01" value="0.6" style="width:200px;vertical-align:middle;margin:0;">
+            <span id="threshold-value">0.60</span>
+        </label>
+    </div>
+    <div id="graph-container" style="border:1px solid var(--pico-muted-border-color);border-radius:var(--pico-border-radius);overflow:hidden;">
+        <svg id="similarity-graph" style="width:100%;height:520px;"></svg>
+    </div>
+</section>
+
+<section>
+    <h3>Individual Anomaly Scores</h3>
+    <table>
+        <thead><tr><th>Student</th><th>Anomaly Score</th><th>Flagged Events</th><th>Was Collaborating</th><th>Status</th></tr></thead>
+        <tbody id="anomaly-tbody">
+        {% for ind in report.individual %}
+        <tr data-student-id="{{ ind.student_id }}" data-anomaly-suspect="{{ 'true' if ind.student_id in anomaly_suspect_ids else 'false' }}" style="cursor:pointer">
+            <td>{{ student_emails.get(ind.student_id, ind.student_id) }}</td>
+            <td>{{ "%.2f"|format(ind.anomaly_score) }}</td>
+            <td>{{ ind.events | length }}</td>
+            <td class="collab-td"></td>
+            <td class="status-td">{% if ind.student_id in anomaly_suspect_ids %}<mark>Suspect</mark>{% else %}OK{% endif %}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
 </section>
 
 <!-- Edge / suspect-pair detail modal -->
@@ -40,10 +58,10 @@
     <dl>
       <dt>Student A</dt><dd id="modal-a"></dd>
       <dt>Student B</dt><dd id="modal-b"></dd>
-      <dt>Combined Score (M)</dt><dd id="modal-score"></dd>
-      <dt>Cosine</dt><dd id="modal-cosine"></dd>
-      <dt>Structural</dt><dd id="modal-structural"></dd>
-      <dt>Sequential</dt><dd id="modal-sequential"></dd>
+      <dt>Combined Score</dt><dd id="modal-score"></dd>
+      <dt>Cosine Score</dt><dd id="modal-cosine"></dd>
+      <dt>Structural Score</dt><dd id="modal-structural"></dd>
+      <dt>Sequential Score</dt><dd id="modal-sequential"></dd>
     </dl>
     <div id="modal-match-tabs" style="display:flex;gap:0;border-bottom:1px solid var(--pico-muted-border-color);margin-top:1rem;">
       <button class="match-tab" data-tab="sequential" style="background:transparent;border:none;border-bottom:2px solid transparent;padding:0.4rem 0.9rem;cursor:pointer;font-size:0.9em;color:inherit;margin-bottom:-1px;">
@@ -87,27 +105,11 @@
 <section>
   <h3>Suspect Pairs</h3>
   <table id="suspect-pairs-table">
-    <thead><tr><th>Student A</th><th>Student B</th><th>Score M</th><th>Cosine</th><th>Structural</th><th>Sequential</th></tr></thead>
+    <thead><tr><th>Student A</th><th>Student B</th><th>Combined Score</th><th>Cosine</th><th>Structural</th><th>Sequential</th></tr></thead>
     <tbody id="suspect-pairs-body"></tbody>
   </table>
 </section>
 
-<section>
-  <h3>Individual Anomaly Scores</h3>
-  <table>
-    <thead><tr><th>Student</th><th>Anomaly Score</th><th>Flagged Events</th><th>Status</th></tr></thead>
-    <tbody id="anomaly-tbody">
-    {% for ind in report.individual %}
-    <tr data-student-id="{{ ind.student_id }}" style="cursor:pointer">
-      <td>{{ student_emails.get(ind.student_id, ind.student_id) }}</td>
-      <td>{{ "%.2f"|format(ind.anomaly_score) }}</td>
-      <td>{{ ind.events | length }}</td>
-      <td>{% if ind.student_id in anomaly_suspect_ids %}<mark>Suspect</mark>{% else %}OK{% endif %}</td>
-    </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-</section>
 {% endblock %}
 
 {% block head %}

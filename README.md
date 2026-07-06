@@ -1,16 +1,15 @@
-# cheat-buster
+# GTU exam analyzer
 
 A tool for detecting academic dishonesty by analysing git commit patterns during exams.
 
 ## Repository layout
 
 ```
-cheat-buster/
+/
 ├── server/        # FastAPI backend
 ├── client/        # PyQt6 desktop client
 ├── db/            # Database schema and migrations
-├── docs/          # Project documentation
-└── management/    # Task tracking and kanban board
+└── docs/          # Project documentation
 ```
 
 ---
@@ -68,7 +67,7 @@ cd client
 
 # Using uv (recommended)
 uv venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+source .venv/bin/activate  
 uv pip install -e .
 
 # Using pip
@@ -110,19 +109,6 @@ alembic upgrade head
 ```
 
 SQLite `render_as_batch=True` is enabled in `env.py` for ALTER TABLE support.
-
----
-
-## Docker
-
-Run the server in Docker (SQLite data persisted in a volume):
-
-```bash
-# copy and fill in server/.env first
-docker compose up
-```
-
-Server starts on `http://localhost:8000`. Data survives container restarts.
 
 ---
 

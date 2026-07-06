@@ -1,25 +1,11 @@
-"""Pydantic request/response schemas for cheat-buster."""
-
 from __future__ import annotations
 
 from typing import Literal
 
 from pydantic import BaseModel, EmailStr
 
-
-# ---------------------------------------------------------------------------
-# Health
-# ---------------------------------------------------------------------------
-
-
 class HealthResponse(BaseModel):
     status: str
-
-
-# ---------------------------------------------------------------------------
-# Users
-# ---------------------------------------------------------------------------
-
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -36,12 +22,6 @@ class UserOut(BaseModel):
     created_at: str
 
     model_config = {"from_attributes": True}
-
-
-# ---------------------------------------------------------------------------
-# Exams
-# ---------------------------------------------------------------------------
-
 
 class ExamCreate(BaseModel):
     name: str
@@ -61,12 +41,6 @@ class ExamOut(BaseModel):
 
     model_config = {"from_attributes": True}
 
-
-# ---------------------------------------------------------------------------
-# Exam Sessions
-# ---------------------------------------------------------------------------
-
-
 class ExamSessionCreate(BaseModel):
     exam_id: int
     student_id: int
@@ -82,11 +56,6 @@ class ExamSessionOut(BaseModel):
     ended_at: str | None
 
     model_config = {"from_attributes": True}
-
-
-# ---------------------------------------------------------------------------
-# Commits
-# ---------------------------------------------------------------------------
 
 
 class CommitIn(BaseModel):
@@ -112,11 +81,6 @@ class CommitOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-# ---------------------------------------------------------------------------
-# Analysis Results
-# ---------------------------------------------------------------------------
-
-
 class AnalysisResultOut(BaseModel):
     result_id: int
     exam_id: int
@@ -127,10 +91,6 @@ class AnalysisResultOut(BaseModel):
 
     model_config = {"from_attributes": True}
 
-
-# ---------------------------------------------------------------------------
-# Similarity Pairs
-# ---------------------------------------------------------------------------
 
 
 class SimilarityPairOut(BaseModel):
@@ -143,11 +103,6 @@ class SimilarityPairOut(BaseModel):
     analyzed_at: str
 
     model_config = {"from_attributes": True}
-
-
-# ---------------------------------------------------------------------------
-# Auth
-# ---------------------------------------------------------------------------
 
 
 class StudentAuthRequest(BaseModel):
@@ -167,18 +122,13 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 
-# ---------------------------------------------------------------------------
-# Exam management (TASK-005)
-# ---------------------------------------------------------------------------
-
-
 from pydantic import ConfigDict
 
 
 class ExamCreate(BaseModel):
     name: str
     group_number: str
-    date: str          # ISO 8601 e.g. "2026-06-01"
+    date: str
     duration_minutes: int
 
 
@@ -195,19 +145,15 @@ class ExamResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-# ---------------------------------------------------------------------------
-# Commit ingestion (TASK-006)
-# ---------------------------------------------------------------------------
-
 
 class CommitIngestionItem(BaseModel):
     commit_id: str
-    timestamp: str          # ISO 8601
+    timestamp: str
     exercise_id: str
     file_name: str
     lines_added: int = 0
     lines_removed: int = 0
-    diff: str | None = None   # optional, ignored for now (MVP)
+    diff: str | None = None
 
 
 class CommitIngestionRequest(BaseModel):
@@ -216,11 +162,6 @@ class CommitIngestionRequest(BaseModel):
 
 class CommitIngestionResponse(BaseModel):
     inserted: int
-
-
-# ---------------------------------------------------------------------------
-# Analysis / Report (TASK-009)
-# ---------------------------------------------------------------------------
 
 
 class AnomalyEventSchema(BaseModel):
@@ -252,11 +193,11 @@ class ReportResponse(BaseModel):
     generated_at: str
     individual: list[IndividualResultSchema]
     group: GroupResultSchema
-    suspects: list[int]  # student_ids above threshold
+    suspects: list[int]
 
 
 class AnalysisTriggerResponse(BaseModel):
     exam_id: int
-    status: str  # "completed"
+    status: str
     individual_count: int
     edge_count: int

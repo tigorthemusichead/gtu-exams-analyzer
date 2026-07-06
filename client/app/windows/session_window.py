@@ -16,7 +16,7 @@ class SessionWindow(QWidget):
         self.interval_seconds = interval_seconds
         self._countdown = interval_seconds
         self._commit_count = 0
-        self.setWindowTitle("cheat-buster — Active Session")
+        self.setWindowTitle("GTU exam monitoring — Active Session")
         self.setMinimumSize(500, 420)
         self._build_ui()
         self._start_countdown()

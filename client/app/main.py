@@ -18,7 +18,7 @@ _ICO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources"
 class MainApp(QStackedWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("cheat-buster")
+        self.setWindowTitle("GTU exam monitoring")
         self.setMinimumSize(540, 420)
         self._auth_window = AuthWindow()
         self.addWidget(self._auth_window)
@@ -116,7 +116,7 @@ class MainApp(QStackedWidget):
 
 def main():
     app = QApplication(sys.argv)
-    app.setApplicationName("cheat-buster")
+    app.setApplicationName("GTU exam monitoring")
     app.setStyleSheet(STYLESHEET)
     app.setWindowIcon(QIcon(_ICO_PATH))
     window = MainApp()
